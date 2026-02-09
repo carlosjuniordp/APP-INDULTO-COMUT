@@ -1,0 +1,1280 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NUSPEN/RJ CALC INDULTO/COMUTAÇÃO</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            serif: ['"Source Serif 4"', 'Georgia', 'serif'],
+            sans: ['"DM Sans"', 'system-ui', 'sans-serif'],
+          },
+          colors: {
+            brand: { 50:'#f0fdf4', 100:'#dcfce7', 200:'#bbf7d0', 500:'#22c55e', 600:'#16a34a', 700:'#15803d', 800:'#166534', 900:'#14532d' },
+            ink: { 50:'#f8fafc', 100:'#f1f5f9', 200:'#e2e8f0', 300:'#cbd5e1', 400:'#94a3b8', 500:'#64748b', 600:'#475569', 700:'#334155', 800:'#1e293b', 900:'#0f172a' },
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body { font-family: 'DM Sans', system-ui, sans-serif; background: #f8fafc; }
+    .font-serif { font-family: 'Source Serif 4', Georgia, serif; }
+    
+    /* Loader */
+    .loader { border: 3px solid #e2e8f0; border-top: 3px solid #16a34a; border-radius: 50%; width: 36px; height: 36px; animation: spin .8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    
+    /* Smooth transitions */
+    .fade-in { animation: fadeIn .3s ease-out; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    
+    /* Input focus */
+    input:focus, select:focus { outline: none; border-color: #16a34a; box-shadow: 0 0 0 3px rgba(22,163,74,.12); }
+    
+    /* Custom scrollbar */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+    
+    /* Number input arrows */
+    input[type="number"]::-webkit-inner-spin-button { opacity: 1; }
+    
+    /* Tooltip */
+    .tooltip { position: relative; }
+    .tooltip::after { content: attr(data-tip); position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); background: #1e293b; color: white; padding: 4px 10px; border-radius: 6px; font-size: 11px; white-space: nowrap; opacity: 0; pointer-events: none; transition: opacity .2s; }
+    .tooltip:hover::after { opacity: 1; }
+    
+    /* Print styles */
+    @media print {
+      body { margin: 0; padding: 0; background: white; }
+      .no-print { display: none !important; }
+      #app { max-width: 100%; padding: 0; }
+      .bg-ink-800, .bg-ink-900 { background-color: #1e293b !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .bg-red-600, .bg-green-600, .bg-brand-600 { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .text-white { color: white !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    }
+    
+    /* Card hover */
+    .card-hover { transition: box-shadow .2s, transform .15s; }
+    .card-hover:hover { box-shadow: 0 4px 12px rgba(0,0,0,.08); transform: translateY(-1px); }
+    
+    /* Radio/Checkbox custom */
+    input[type="radio"]:checked { accent-color: #16a34a; }
+    input[type="checkbox"]:checked { accent-color: #16a34a; }
+    
+    /* Tag styles */
+    .tag { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 6px; font-size: 11px; font-weight: 600; letter-spacing: .02em; text-transform: uppercase; }
+    .tag-red { background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
+    .tag-green { background: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0; }
+    .tag-purple { background: #faf5ff; color: #9333ea; border: 1px solid #e9d5ff; }
+    .tag-gray { background: #f1f5f9; color: #64748b; border: 1px solid #e2e8f0; }
+    .tag-amber { background: #fffbeb; color: #d97706; border: 1px solid #fde68a; }
+  </style>
+</head>
+<body class="min-h-screen">
+  <div id="app" class="max-w-4xl mx-auto px-4 py-6">
+
+    <!-- ======== HEADER ======== -->
+    <header class="bg-white border border-ink-200 rounded-2xl p-5 mb-6 flex items-center gap-4 shadow-sm">
+      <img src="data:image/png;base64,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" alt="Logo NUSPEN/RJ" class="w-12 h-12 rounded-xl flex-shrink-0 object-contain">
+      <div class="flex-1">
+        <h1 class="text-xl font-bold text-ink-900 tracking-tight">NUSPEN/RJ CALC INDULTO/COMUTAÇÃO</h1>
+        <p class="text-xs text-ink-400 mt-0.5">100% Gratuita · Uso Offline · Dados não saem do navegador</p>
+      </div>
+    </header>
+
+    <!-- Credits -->
+    <p class="text-center text-[11px] text-ink-400 mb-5 leading-relaxed">
+      App criado em 30/12/25 pelo Defensor Público (DPERJ) <strong class="text-ink-500">Carlos Alberto de F. e Silva Jr.</strong><br>
+      Para utilização pelos Defensores Públicos (DPGE/RJ) e pessoal de apoio.
+    </p>
+
+    <!-- ======== FORM SECTION ======== -->
+    <div id="form-section" class="space-y-5">
+
+      <!-- Upload PDF -->
+      <div id="upload-area" class="bg-white border-2 border-dashed border-ink-200 rounded-2xl p-8 text-center hover:border-brand-500 hover:bg-brand-50/30 transition-all cursor-pointer group">
+        <input type="file" id="pdf-input" accept=".pdf" class="hidden">
+        <div id="upload-content">
+          <div class="w-14 h-14 rounded-2xl bg-ink-100 group-hover:bg-brand-100 flex items-center justify-center mx-auto mb-3 transition-colors">
+            <svg class="w-7 h-7 text-ink-400 group-hover:text-brand-600 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 8.25H7.5a2.25 2.25 0 00-2.25 2.25v9a2.25 2.25 0 002.25 2.25h9a2.25 2.25 0 002.25-2.25v-9a2.25 2.25 0 00-2.25-2.25H15m0-3l-3-3m0 0l-3 3m3-3V15" />
+            </svg>
+          </div>
+          <p class="text-ink-700 font-semibold mb-1">Carregar PDF do Relatório SEEU</p>
+          <p class="text-ink-400 text-sm">Clique ou arraste o arquivo aqui</p>
+        </div>
+        <div id="loading-content" class="hidden flex flex-col items-center">
+          <div class="loader mb-3"></div>
+          <p class="text-brand-600 font-medium text-sm">Extraindo dados do PDF...</p>
+        </div>
+      </div>
+
+      <!-- Messages -->
+      <div id="error-msg" class="hidden bg-red-50 border border-red-200 rounded-xl p-4 text-red-700 text-sm fade-in"></div>
+      <div id="success-msg" class="hidden bg-brand-50 border border-brand-200 rounded-xl p-4 text-brand-800 text-sm fade-in"></div>
+
+      <!-- Dados do Apenado -->
+      <section class="bg-white border border-ink-200 rounded-2xl overflow-hidden shadow-sm">
+        <div class="bg-ink-50 px-6 py-3 border-b border-ink-200">
+          <h3 class="font-semibold text-ink-800 text-sm tracking-wide uppercase">Dados do Apenado</h3>
+        </div>
+        <div class="p-6 space-y-4">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-medium text-ink-500 mb-1.5">Nome</label>
+              <input type="text" id="nome" class="w-full px-4 py-2.5 border border-ink-200 rounded-xl text-sm bg-white transition-all" placeholder="Nome completo">
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-ink-500 mb-1.5">RG</label>
+              <input type="text" id="rg" class="w-full px-4 py-2.5 border border-ink-200 rounded-xl text-sm bg-white transition-all" placeholder="Número do RG">
+            </div>
+          </div>
+
+          <!-- Tipo de Benefício -->
+          <div>
+            <label class="block text-xs font-medium text-ink-500 mb-2">Tipo de Benefício</label>
+            <div class="flex gap-3">
+              <label class="flex-1 flex items-center gap-3 p-3 border border-ink-200 rounded-xl cursor-pointer hover:bg-ink-50 transition-colors has-[:checked]:border-brand-500 has-[:checked]:bg-brand-50">
+                <input type="radio" name="tipoBeneficio" value="COMUTACAO" checked class="w-4 h-4" onchange="atualizarTipoBeneficio()">
+                <div>
+                  <span class="text-sm font-semibold text-ink-800">Comutação</span>
+                  <p class="text-[11px] text-ink-400">Art. 11 – Frações fixas</p>
+                </div>
+              </label>
+              <label class="flex-1 flex items-center gap-3 p-3 border border-ink-200 rounded-xl cursor-pointer hover:bg-ink-50 transition-colors has-[:checked]:border-brand-500 has-[:checked]:bg-brand-50">
+                <input type="radio" name="tipoBeneficio" value="INDULTO" class="w-4 h-4" onchange="atualizarTipoBeneficio()">
+                <div>
+                  <span class="text-sm font-semibold text-ink-800">Indulto</span>
+                  <p class="text-[11px] text-ink-400">Arts. 2º, 3º e 9º – Frações por faixa</p>
+                </div>
+              </label>
+            </div>
+            <p id="info-beneficio" class="text-[11px] text-brand-700 mt-2 px-1">
+              Comutação: Requisito de 1/5 (primário) ou 1/4 (reincidente) da pena → Redução de 1/5.
+            </p>
+          </div>
+
+          <!-- Decreto + Reincidência -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-medium text-ink-500 mb-1.5">Decreto Natalino</label>
+              <select id="decreto" class="w-full px-4 py-2.5 border border-ink-200 rounded-xl text-sm bg-white transition-all cursor-pointer">
+                <option value="ambos" selected>Analisar Decretos 2024 e 2025</option>
+                <option value="2025">Decreto nº 12.790/2025 (ref. 25/12/2025)</option>
+                <option value="2024">Decreto nº 12.338/2024 (ref. 25/12/2024)</option>
+              </select>
+              <p class="text-[11px] text-ink-400 mt-1 px-1">A data de referência é sempre 25/12 do ano do decreto.</p>
+            </div>
+            <div class="flex flex-col justify-end gap-3">
+              <label class="flex items-center gap-2.5 p-3 border border-ink-200 rounded-xl cursor-pointer hover:bg-ink-50 transition-colors">
+                <input type="checkbox" id="reincidente" class="w-4 h-4" onchange="atualizarTipoBeneficio()">
+                <span class="text-sm text-ink-700 font-medium">Reincidente</span>
+              </label>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Pena Total Imposta -->
+      <section class="bg-white border border-amber-300 rounded-2xl overflow-hidden shadow-sm">
+        <div class="bg-amber-50 px-6 py-3 border-b border-amber-200 flex items-center gap-2">
+          <svg class="w-4 h-4 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+          </svg>
+          <h3 class="font-semibold text-amber-800 text-sm tracking-wide uppercase">Pena Total Imposta (SEEU)</h3>
+        </div>
+        <div class="p-6">
+          <p class="text-xs text-amber-700 mb-4">Este valor é a <strong>fonte de verdade</strong> para o cálculo. Copie exatamente do campo "Pena Total Imposta" do PDF.</p>
+          <div class="grid grid-cols-3 gap-3">
+            <div>
+              <label class="block text-[11px] font-medium text-amber-700 mb-1">Anos</label>
+              <input type="number" id="pena-total-anos" min="0" value="0" class="w-full px-3 py-2.5 border border-amber-200 rounded-xl text-sm bg-white text-center font-semibold">
+            </div>
+            <div>
+              <label class="block text-[11px] font-medium text-amber-700 mb-1">Meses</label>
+              <input type="number" id="pena-total-meses" min="0" value="0" class="w-full px-3 py-2.5 border border-amber-200 rounded-xl text-sm bg-white text-center font-semibold">
+            </div>
+            <div>
+              <label class="block text-[11px] font-medium text-amber-700 mb-1">Dias</label>
+              <input type="number" id="pena-total-dias" min="0" value="0" class="w-full px-3 py-2.5 border border-amber-200 rounded-xl text-sm bg-white text-center font-semibold">
+            </div>
+          </div>
+          <p id="pena-total-info" class="text-[11px] text-amber-500 mt-2 text-center">Equivale a 0 dias</p>
+        </div>
+      </section>
+
+      <!-- Pena Cumprida -->
+      <section class="bg-white border border-ink-200 rounded-2xl overflow-hidden shadow-sm">
+        <div class="bg-ink-50 px-6 py-3 border-b border-ink-200">
+          <h3 class="font-semibold text-ink-800 text-sm tracking-wide uppercase">Pena Cumprida</h3>
+        </div>
+        <div class="p-6 space-y-4">
+          <div class="grid grid-cols-3 gap-3">
+            <div>
+              <label class="block text-[11px] font-medium text-ink-500 mb-1">Anos</label>
+              <input type="number" id="cumprida-anos" min="0" value="0" class="w-full px-3 py-2.5 border border-ink-200 rounded-xl text-sm bg-white text-center font-semibold">
+            </div>
+            <div>
+              <label class="block text-[11px] font-medium text-ink-500 mb-1">Meses</label>
+              <input type="number" id="cumprida-meses" min="0" value="0" class="w-full px-3 py-2.5 border border-ink-200 rounded-xl text-sm bg-white text-center font-semibold">
+            </div>
+            <div>
+              <label class="block text-[11px] font-medium text-ink-500 mb-1">Dias</label>
+              <input type="number" id="cumprida-dias" min="0" value="0" class="w-full px-3 py-2.5 border border-ink-200 rounded-xl text-sm bg-white text-center font-semibold">
+            </div>
+          </div>
+          <p id="cumprida-info" class="text-[11px] text-ink-400 text-center">Equivale a 0 dias</p>
+
+          <!-- Data de Geração -->
+          <div class="bg-blue-50 border border-blue-200 rounded-xl p-4">
+            <label class="block text-xs font-semibold text-blue-800 mb-2">
+              <span class="inline-flex items-center gap-1.5">
+                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" /></svg>
+                Data de Geração do Relatório SEEU
+              </span>
+            </label>
+            <input type="date" id="data-geracao" class="w-full px-4 py-2.5 border border-blue-200 rounded-xl text-sm bg-white">
+            <p class="text-[11px] text-blue-600 mt-2 leading-relaxed">
+              Usada para retroagir a pena cumprida até 25/12 do decreto. Extraída automaticamente do rodapé do PDF.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Falta Grave -->
+      <section class="bg-white border border-ink-200 rounded-2xl overflow-hidden shadow-sm">
+        <div class="bg-ink-50 px-6 py-3 border-b border-ink-200 flex items-center gap-2">
+          <svg class="w-4 h-4 text-ink-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+          </svg>
+          <h3 class="font-semibold text-ink-800 text-sm tracking-wide uppercase">Requisito Comportamental (Art. 6º)</h3>
+        </div>
+        <div class="p-6 space-y-3">
+          <p class="text-xs text-ink-500 leading-relaxed">
+            O benefício fica condicionado à inexistência de falta grave nos <strong>12 meses anteriores a 25/12</strong> do ano do decreto.
+            Falta grave cometida <em>após</em> a publicação do decreto não impede o benefício (Art. 6º, parágrafo único).
+          </p>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div class="p-3 border border-ink-200 rounded-xl">
+              <p class="text-[11px] font-semibold text-ink-500 mb-1">DECRETO 2024 — Período sem falta grave:</p>
+              <p class="text-sm font-semibold text-ink-800">26/12/2023 a 25/12/2024</p>
+              <label class="flex items-center gap-2 mt-2">
+                <input type="checkbox" id="falta-grave-2024" class="w-4 h-4">
+                <span class="text-xs text-red-600 font-medium">Houve falta grave neste período</span>
+              </label>
+            </div>
+            <div class="p-3 border border-ink-200 rounded-xl">
+              <p class="text-[11px] font-semibold text-ink-500 mb-1">DECRETO 2025 — Período sem falta grave:</p>
+              <p class="text-sm font-semibold text-ink-800">26/12/2024 a 25/12/2025</p>
+              <label class="flex items-center gap-2 mt-2">
+                <input type="checkbox" id="falta-grave-2025" class="w-4 h-4">
+                <span class="text-xs text-red-600 font-medium">Houve falta grave neste período</span>
+              </label>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Processos -->
+      <section class="bg-white border border-ink-200 rounded-2xl overflow-hidden shadow-sm">
+        <div class="bg-ink-50 px-6 py-3 border-b border-ink-200 flex items-center justify-between">
+          <h3 class="font-semibold text-ink-800 text-sm tracking-wide uppercase">Processos e Delitos</h3>
+          <button type="button" onclick="adicionarProcesso()" class="px-3 py-1.5 text-xs font-semibold text-brand-700 bg-brand-50 border border-brand-200 rounded-lg hover:bg-brand-100 transition-colors">
+            + Processo
+          </button>
+        </div>
+        <div id="processos-container" class="p-4 space-y-4"></div>
+      </section>
+
+      <!-- Botão Calcular -->
+      <button type="button" onclick="calcular()" class="w-full px-6 py-4 bg-brand-600 text-white rounded-2xl hover:bg-brand-700 active:bg-brand-800 font-bold text-base tracking-wide transition-all shadow-sm hover:shadow-md">
+        Calcular Elegibilidade
+      </button>
+    </div>
+
+    <!-- ======== RESULTADO ======== -->
+    <div id="resultado-section" class="hidden fade-in">
+      <div id="resultado-content"></div>
+      <div class="flex gap-3 mt-6 no-print">
+        <button type="button" onclick="voltar()" class="flex-1 px-4 py-3 border border-ink-200 rounded-xl hover:bg-ink-50 text-sm font-medium text-ink-700 transition-colors">
+          ← Editar Dados
+        </button>
+        <button type="button" onclick="novoCalculo()" class="flex-1 px-4 py-3 bg-ink-800 text-white rounded-xl hover:bg-ink-900 text-sm font-medium transition-colors">
+          Novo Cálculo
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- JAVASCRIPT -->
+  <!-- ============================================================ -->
+  <script>
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+    const DIAS_ANO = 365;
+    const DIAS_MES = 30;
+
+    // ==========================================
+    // DECRETOS - NÚMERO CORRIGIDO PARA 2024
+    // ==========================================
+    const DECRETOS = {
+      '2024': { numero: '12.338/2024', dataBase: new Date(2024, 11, 25) },
+      '2025': { numero: '12.790/2025', dataBase: new Date(2025, 11, 25) }
+    };
+
+    let processos = [];
+    let dataGeracaoRelatorio = null;
+
+    // ==========================================
+    // FUNÇÕES AUXILIARES
+    // ==========================================
+    function converterParaDias(anos, meses, dias) {
+      return (parseInt(anos)||0) * DIAS_ANO + (parseInt(meses)||0) * DIAS_MES + (parseInt(dias)||0);
+    }
+
+    function converterParaTempo(totalDias) {
+      const d = Math.max(0, Math.floor(totalDias));
+      const anos = Math.floor(d / DIAS_ANO);
+      const meses = Math.floor((d % DIAS_ANO) / DIAS_MES);
+      const dias = (d % DIAS_ANO) % DIAS_MES;
+      return { anos, meses, dias };
+    }
+
+    function fmt(t) {
+      return `${t.anos}a ${String(t.meses).padStart(2,'0')}m ${String(t.dias).padStart(2,'0')}d`;
+    }
+
+    function fmtLongo(t) {
+      let parts = [];
+      if (t.anos > 0) parts.push(`${t.anos} ano${t.anos>1?'s':''}`);
+      if (t.meses > 0) parts.push(`${t.meses} ${t.meses>1?'meses':'mês'}`);
+      if (t.dias > 0) parts.push(`${t.dias} dia${t.dias>1?'s':''}`);
+      return parts.length > 0 ? parts.join(', ') : '0 dias';
+    }
+
+    // Cálculo com precisão em dias (método jurídico - arredondamento em favor do réu)
+    function calcularFracao(anos, meses, dias, numerador, denominador) {
+      const totalDias = (parseInt(anos)||0) * 12 * DIAS_MES + (parseInt(meses)||0) * DIAS_MES + (parseInt(dias)||0);
+      const resultadoDias = Math.floor(totalDias * numerador / denominador);
+      const a = Math.floor(resultadoDias / (12 * DIAS_MES));
+      const m = Math.floor((resultadoDias % (12 * DIAS_MES)) / DIAS_MES);
+      const d = resultadoDias % DIAS_MES;
+      return { anos: a, meses: m, dias: d, totalDias: resultadoDias };
+    }
+
+    function mostrarErro(msg) {
+      const el = document.getElementById('error-msg');
+      el.innerHTML = msg; el.classList.remove('hidden');
+      document.getElementById('success-msg').classList.add('hidden');
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+
+    function mostrarSucesso(msg) {
+      const el = document.getElementById('success-msg');
+      el.innerHTML = msg; el.classList.remove('hidden');
+      document.getElementById('error-msg').classList.add('hidden');
+    }
+
+    function esconderMensagens() {
+      document.getElementById('error-msg').classList.add('hidden');
+      document.getElementById('success-msg').classList.add('hidden');
+    }
+
+    // ==========================================
+    // TIPO DE BENEFÍCIO
+    // ==========================================
+    function getTipoBeneficio() {
+      const radios = document.getElementsByName('tipoBeneficio');
+      for (const r of radios) { if (r.checked) return r.value; }
+      return 'COMUTACAO';
+    }
+
+    function atualizarTipoBeneficio() {
+      const tipo = getTipoBeneficio();
+      const reincidente = document.getElementById('reincidente').checked;
+      const info = document.getElementById('info-beneficio');
+      if (tipo === 'COMUTACAO') {
+        info.textContent = `Comutação (Art. 11): Requisito de ${reincidente?'1/4':'1/5'} (${reincidente?'reincidente':'primário'}) da pena → Redução de 1/5.`;
+        info.className = 'text-[11px] text-brand-700 mt-2 px-1';
+      } else {
+        info.textContent = 'Indulto (Arts. 2º, 3º e 9º): Selecione a fração aplicável a cada crime não impeditivo conforme a tabela do decreto.';
+        info.className = 'text-[11px] text-blue-700 mt-2 px-1';
+      }
+      if (typeof renderizarProcessos === 'function') renderizarProcessos();
+    }
+
+    // ==========================================
+    // CLASSIFICAÇÃO DE CRIMES IMPEDITIVOS (Art. 1º)
+    // ==========================================
+    function isImpeditivo(artigo, descricao, lei, anos=0, meses=0, dias=0) {
+      const texto = (artigo + ' ' + descricao + ' ' + lei).toLowerCase();
+      const penaMeses = (parseInt(anos)||0) * 12 + (parseInt(meses)||0);
+
+      // Art. 33 Lei 11.343 - Tráfico
+      // Privilegiado (§4º): pena < 5 anos = NÃO impeditivo (STF)
+      if (/art\.?\s*33\b/i.test(artigo) && /11\.?343|drogas/i.test(lei)) {
+        if (penaMeses > 0 && penaMeses < 60) return false;
+        return true;
+      }
+      // Art. 34 a 37, 39 Lei 11.343
+      if (/art\.?\s*(34|35|36|37|39)\b/i.test(artigo) && /11\.?343|drogas/i.test(lei)) return true;
+      // Homicídio qualificado
+      if (/art\.?\s*121/i.test(artigo) && /§\s*2|qualificado/i.test(texto)) return true;
+      // Roubo §2º-A (arma de fogo - hediondo)
+      if (/art\.?\s*157/i.test(artigo) && (/§\s*2º?-?A|arma\s+de\s+fogo/i.test(texto) || /40%/i.test(texto))) return true;
+      // Latrocínio (Art. 157 §3º)
+      if (/art\.?\s*157/i.test(artigo) && /§\s*3|resultado\s*morte|latrocínio/i.test(texto)) return true;
+      // Estupro
+      if (/art\.?\s*(213|217-?a)/i.test(artigo)) return true;
+      // Extorsão mediante sequestro
+      if (/art\.?\s*159/i.test(artigo)) return true;
+      // Tortura
+      if (/tortura/i.test(texto) || /9\.?455/i.test(lei)) return true;
+      // Lavagem de dinheiro (pena > 4 anos)
+      if (/9\.?613|lavagem/i.test(texto)) {
+        if (penaMeses > 48) return true;
+        return false; // pena ≤ 4 anos = não impeditivo
+      }
+      // Organização criminosa
+      if (/12\.?850|organiza/i.test(texto)) return true;
+      // Crimes contra o Estado Democrático
+      if (/estado\s+democr/i.test(texto)) return true;
+      // Violência contra a mulher (Maria da Penha)
+      if (/maria\s+da\s+penha|11\.?340|violência.*mulher/i.test(texto)) return true;
+      // Abuso de autoridade
+      if (/abuso.*autoridade|13\.?869/i.test(texto)) return true;
+
+      return false;
+    }
+
+    // ==========================================
+    // EXTRAÇÃO DE PDF - SEEU
+    // ==========================================
+    async function extrairTextoPDF(file) {
+      const arrayBuffer = await file.arrayBuffer();
+      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+      let textoCompleto = '';
+      for (let i = 1; i <= pdf.numPages; i++) {
+        const page = await pdf.getPage(i);
+        const content = await page.getTextContent();
+        textoCompleto += content.items.map(item => item.str).join(' ') + '\n';
+      }
+      return textoCompleto;
+    }
+
+    function parsearPDF(textoOriginal) {
+      const texto = textoOriginal.replace(/\s+/g, ' ').trim();
+      console.log('=== PARSER V8 ===');
+      console.log('Texto normalizado:', texto.length, 'chars');
+
+      const dados = {
+        nome: '', rg: '',
+        penaTotalImposta: { anos: 0, meses: 0, dias: 0 },
+        penaCumprida: { anos: 0, meses: 0, dias: 0 },
+        dataGeracao: null,
+        processos: []
+      };
+
+      // Data de Geração
+      const dataGeracaoMatch = texto.match(/Gerado\s+em:\s*(\d{2})\/(\d{2})\/(\d{4})/i);
+      if (dataGeracaoMatch) {
+        dados.dataGeracao = new Date(parseInt(dataGeracaoMatch[3]), parseInt(dataGeracaoMatch[2])-1, parseInt(dataGeracaoMatch[1]));
+        console.log('Data de geração:', dados.dataGeracao.toLocaleDateString('pt-BR'));
+      }
+
+      // Nome
+      const nomeMatch = texto.match(/Número\s+Antigo:\s*([A-Za-záéíóúâêîôûãõçÁÉÍÓÚÂÊÎÔÛÃÕÇ\s]+?)\s+\d{2}\/\d{2}\/\d{4}/i);
+      if (nomeMatch) { dados.nome = nomeMatch[1].trim(); console.log('Nome:', dados.nome); }
+
+      // RG
+      const rgMatch = texto.match(/\d{2}\/\d{2}\/\d{4}\s+(\d{9,11})/);
+      if (rgMatch) { dados.rg = rgMatch[1].trim(); console.log('RG:', dados.rg); }
+
+      // Pena Total Imposta
+      const penaTotalMatch = texto.match(/Pena\s+Total\s+Imposta:\s*(\d+)a(\d+)m(\d+)d/i);
+      if (penaTotalMatch) {
+        dados.penaTotalImposta = { anos: parseInt(penaTotalMatch[1]), meses: parseInt(penaTotalMatch[2]), dias: parseInt(penaTotalMatch[3]) };
+      }
+
+      // Pena Cumprida
+      const cumprMatch = texto.match(/Pena\s+Cumprida[^:]*:\s*(\d+)a(\d+)m(\d+)d/i);
+      if (cumprMatch) {
+        dados.penaCumprida = { anos: parseInt(cumprMatch[1]), meses: parseInt(cumprMatch[2]), dias: parseInt(cumprMatch[3]) };
+      }
+
+      // PROCESSOS
+      const inicioProcessos = texto.indexOf('PROCESSOS CRIMINAIS');
+      const fimProcessos = texto.indexOf('EVENTOS DE INÍCIO');
+      if (inicioProcessos === -1) { console.log('PROCESSOS CRIMINAIS não encontrada'); return dados; }
+
+      const secaoProcessos = fimProcessos > inicioProcessos ? texto.substring(inicioProcessos, fimProcessos) : texto.substring(inicioProcessos);
+
+      const processoRegex = /(\d{7}-\d{2}\.\d{4}\.\d\.\d{2}\.\d{4})\s+Número:\s*(\(Extinta\))?\s*(\(Comutada\))?\s*Tipo:\s*ACAO\s*PENAL/gi;
+      const processosMatch = [...secaoProcessos.matchAll(processoRegex)];
+      console.log('Processos encontrados:', processosMatch.length);
+
+      for (let i = 0; i < processosMatch.length; i++) {
+        const match = processosMatch[i];
+        const numero = match[1];
+        const isExtinto = !!match[2];
+        const isComutadaRegex = !!match[3];
+
+        const inicioProc = match.index;
+        const fimProc = i < processosMatch.length - 1 ? processosMatch[i+1].index : secaoProcessos.length;
+        const secaoProc = secaoProcessos.substring(inicioProc, fimProc);
+        const isComutada = isComutadaRegex || /\(Comutada\)/i.test(secaoProc);
+
+        console.log(`\n--- Processo ${i+1}: ${numero} ${isExtinto?'(EXTINTO)':''} ${isComutada?'(COMUTADA)':''} ---`);
+
+        // Pena total do processo
+        const penaProcMatch = secaoProc.match(/(\d+)a(\d+)m(\d+)d\s*-\s*PENA\s*ORIGINÁRIA/i);
+        const penaTotalProcesso = penaProcMatch ?
+          { anos: parseInt(penaProcMatch[1]), meses: parseInt(penaProcMatch[2]), dias: parseInt(penaProcMatch[3]) }
+          : { anos: 0, meses: 0, dias: 0 };
+
+        // DELITOS
+        const delitoRegex = /ART\s+(\d+)\s*[-:]?\s*([A-Za-zÀ-ÿ\s]+?)\s*Artigo\s+da\s+Lei:\s*Lei:\s*(\d+\/\d+)/gi;
+        const delitosTemp = [...secaoProc.matchAll(delitoRegex)];
+
+        // Penas
+        const penaRegex = /Pena\s+Imposta:\s*(\d+)\s*ano\(s\)\s*(\d+)\s*mês\(es\)\s*(\d+)\s*dia\(s\)/gi;
+        const penasTemp = [...secaoProc.matchAll(penaRegex)];
+
+        const delitos = [];
+        for (let j = 0; j < delitosTemp.length; j++) {
+          const del = delitosTemp[j];
+          const artigo = 'ART ' + del[1];
+          const descricao = del[2].trim();
+          const lei = del[3];
+
+          const fimSecaoDelito = delitosTemp[j+1] ? delitosTemp[j+1].index : secaoProc.length;
+          const secaoDelito = secaoProc.substring(del.index, fimSecaoDelito);
+
+          const fracaoProgressao = secaoDelito.match(/Fração\s+adotada\s+no\s+cálculo\s+para\s+progressão\s+de\s+regime:\s*([^\n]+)/i);
+          const fracaoTexto = fracaoProgressao ? fracaoProgressao[1].trim() : '';
+          const isHediondoPelaFracao = /40%|hediondo/i.test(fracaoTexto);
+
+          const temParag2A = /§\s*2º?-?A|2º-A/i.test(secaoDelito);
+          const temArmaFogo = /arma\s+de\s+fogo/i.test(secaoDelito);
+
+          let descricaoEnriquecida = descricao;
+          if (temParag2A) descricaoEnriquecida += ' §2º-A';
+          if (temArmaFogo) descricaoEnriquecida += ' (arma de fogo)';
+          if (isHediondoPelaFracao) descricaoEnriquecida += ' [Hediondo]';
+
+          let penaAssociada = { anos: 0, meses: 0, dias: 0 };
+          for (const pena of penasTemp) {
+            if (pena.index > del.index) {
+              const proximoDelito = delitosTemp[j+1];
+              if (!proximoDelito || pena.index < proximoDelito.index) {
+                penaAssociada = { anos: parseInt(pena[1]), meses: parseInt(pena[2]), dias: parseInt(pena[3]) };
+                break;
+              }
+            }
+          }
+
+          const impeditivo = isImpeditivo(artigo, descricaoEnriquecida, lei, penaAssociada.anos, penaAssociada.meses, penaAssociada.dias) || isHediondoPelaFracao;
+          console.log(`  Delito ${j+1}: ${artigo} (${descricao}) Lei ${lei} = ${penaAssociada.anos}a${penaAssociada.meses}m${penaAssociada.dias}d ${impeditivo?'[IMP]':'[não imp]'}`);
+
+          delitos.push({
+            artigo, descricao: descricaoEnriquecida, lei,
+            anos: penaAssociada.anos, meses: penaAssociada.meses, dias: penaAssociada.dias,
+            isImpeditivo: impeditivo
+          });
+        }
+
+        dados.processos.push({
+          numero, isExtinto, isComutada,
+          penaTotalProcesso,
+          delitos: delitos.length > 0 ? delitos : [{ artigo:'', descricao:'', lei:'', anos:0, meses:0, dias:0, isImpeditivo:false }]
+        });
+      }
+
+      console.log('\n=== FIM PARSER ===');
+      return dados;
+    }
+
+    // ==========================================
+    // INTERFACE - RENDERIZAÇÃO DE PROCESSOS
+    // ==========================================
+    function renderizarProcessos() {
+      const container = document.getElementById('processos-container');
+      container.innerHTML = '';
+
+      processos.forEach((proc, pIndex) => {
+        const somaDelitos = proc.delitos.reduce((acc, d) => acc + converterParaDias(d.anos, d.meses, d.dias), 0);
+        const penaTotalProc = converterParaDias(proc.penaTotalProcesso?.anos||0, proc.penaTotalProcesso?.meses||0, proc.penaTotalProcesso?.dias||0);
+
+        // Auto-preencher se pena total é zero mas soma > 0
+        if (penaTotalProc === 0 && somaDelitos > 0) {
+          const s = converterParaTempo(somaDelitos);
+          proc.penaTotalProcesso = { anos: s.anos, meses: s.meses, dias: s.dias };
+        }
+
+        const penaTotalProcAtual = converterParaDias(proc.penaTotalProcesso?.anos||0, proc.penaTotalProcesso?.meses||0, proc.penaTotalProcesso?.dias||0);
+        const somaBate = Math.abs(somaDelitos - penaTotalProcAtual) <= 30;
+
+        const html = `
+          <div class="rounded-xl border ${proc.isExtinto ? 'bg-ink-50 border-ink-200 opacity-60' : 'bg-white border-ink-200'} overflow-hidden card-hover">
+            <!-- Processo Header -->
+            <div class="px-4 py-3 border-b ${proc.isExtinto ? 'border-ink-200 bg-ink-100' : 'border-ink-100 bg-ink-50'} flex items-center gap-3">
+              <div class="flex-1 flex items-center gap-2 flex-wrap">
+                <span class="text-xs font-bold text-ink-400 uppercase">Proc. ${pIndex+1}</span>
+                ${proc.isExtinto ? '<span class="tag tag-gray">Extinto</span>' : ''}
+                ${proc.isComutada ? '<span class="tag tag-purple">Comutada</span>' : ''}
+              </div>
+              <div class="flex items-center gap-3">
+                <label class="flex items-center gap-1.5 cursor-pointer">
+                  <input type="checkbox" ${proc.isExtinto?'checked':''} onchange="atualizarProcesso(${pIndex},'isExtinto',this.checked)" class="w-3.5 h-3.5">
+                  <span class="text-[11px] text-ink-500">Extinto</span>
+                </label>
+                ${processos.length > 1 ? `<button type="button" onclick="removerProcesso(${pIndex})" class="text-ink-300 hover:text-red-500 transition-colors" title="Remover processo">
+                  <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                </button>` : ''}
+              </div>
+            </div>
+
+            <div class="p-4 space-y-3">
+              <!-- Número do processo -->
+              <input type="text" value="${proc.numero||''}" onchange="atualizarProcesso(${pIndex},'numero',this.value)"
+                class="w-full px-3 py-2 border border-ink-200 rounded-lg text-sm" placeholder="Número do processo (ex: 0000000-00.0000.0.00.0000)">
+
+              <!-- Pena Total do Processo -->
+              <div class="p-3 bg-ink-50 rounded-lg border border-ink-100">
+                <div class="flex items-center justify-between mb-2">
+                  <span class="text-[11px] font-semibold text-ink-500 uppercase">Pena Total do Processo</span>
+                  <span class="tag ${somaBate ? 'tag-green' : 'tag-amber'}">
+                    ${somaBate ? '✓ Soma OK' : 'Verificar'}
+                  </span>
+                </div>
+                <div class="grid grid-cols-3 gap-2">
+                  <input type="number" min="0" value="${proc.penaTotalProcesso?.anos||0}"
+                    onchange="atualizarPenaTotalProcesso(${pIndex},'anos',this.value)"
+                    class="px-2 py-1.5 border border-ink-200 rounded-lg text-sm text-center" placeholder="a">
+                  <input type="number" min="0" value="${proc.penaTotalProcesso?.meses||0}"
+                    onchange="atualizarPenaTotalProcesso(${pIndex},'meses',this.value)"
+                    class="px-2 py-1.5 border border-ink-200 rounded-lg text-sm text-center" placeholder="m">
+                  <input type="number" min="0" value="${proc.penaTotalProcesso?.dias||0}"
+                    onchange="atualizarPenaTotalProcesso(${pIndex},'dias',this.value)"
+                    class="px-2 py-1.5 border border-ink-200 rounded-lg text-sm text-center" placeholder="d">
+                </div>
+                <p class="text-[10px] text-ink-400 mt-1.5">Soma delitos: ${fmt(converterParaTempo(somaDelitos))}</p>
+              </div>
+
+              <!-- Delitos -->
+              <div class="space-y-2">
+                <p class="text-[11px] font-semibold text-ink-500 uppercase">Delitos (${proc.delitos.length})</p>
+                ${proc.delitos.map((del, dIndex) => `
+                  <div class="p-3 rounded-lg border-l-[3px] ${del.isImpeditivo ? 'border-l-red-500 bg-red-50/50 border-red-100' : 'border-l-brand-500 bg-brand-50/30 border-brand-100'} border">
+                    <div class="grid grid-cols-2 gap-2 mb-2">
+                      <input type="text" value="${del.artigo||''}" onchange="atualizarDelito(${pIndex},${dIndex},'artigo',this.value)"
+                        class="px-2.5 py-1.5 border border-ink-200 rounded-lg text-xs" placeholder="Artigo (ex: ART 157)">
+                      <input type="text" value="${del.descricao||''}" onchange="atualizarDelito(${pIndex},${dIndex},'descricao',this.value)"
+                        class="px-2.5 py-1.5 border border-ink-200 rounded-lg text-xs" placeholder="Descrição">
+                    </div>
+                    <div class="mb-2">
+                      <input type="text" value="${del.lei||''}" onchange="atualizarDelito(${pIndex},${dIndex},'lei',this.value)"
+                        class="w-full px-2.5 py-1.5 border border-ink-200 rounded-lg text-xs" placeholder="Lei (ex: 11343/06)">
+                    </div>
+                    <div class="grid grid-cols-3 gap-2 mb-2">
+                      <div class="text-center">
+                        <input type="number" min="0" value="${del.anos||0}" onchange="atualizarDelito(${pIndex},${dIndex},'anos',this.value)"
+                          class="w-full px-2 py-1.5 border border-ink-200 rounded-lg text-xs text-center">
+                        <span class="text-[10px] text-ink-400">anos</span>
+                      </div>
+                      <div class="text-center">
+                        <input type="number" min="0" value="${del.meses||0}" onchange="atualizarDelito(${pIndex},${dIndex},'meses',this.value)"
+                          class="w-full px-2 py-1.5 border border-ink-200 rounded-lg text-xs text-center">
+                        <span class="text-[10px] text-ink-400">meses</span>
+                      </div>
+                      <div class="text-center">
+                        <input type="number" min="0" value="${del.dias||0}" onchange="atualizarDelito(${pIndex},${dIndex},'dias',this.value)"
+                          class="w-full px-2 py-1.5 border border-ink-200 rounded-lg text-xs text-center">
+                        <span class="text-[10px] text-ink-400">dias</span>
+                      </div>
+                    </div>
+                    <div class="flex justify-between items-center flex-wrap gap-2">
+                      <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" ${del.isImpeditivo?'checked':''}
+                          onchange="atualizarDelito(${pIndex},${dIndex},'isImpeditivo',this.checked)" class="w-3.5 h-3.5">
+                        <span class="text-xs font-medium ${del.isImpeditivo?'text-red-700':'text-brand-700'}">
+                          ${del.isImpeditivo ? '⛔ Impeditivo (Art. 1º)' : '✅ Não Impeditivo'}
+                        </span>
+                      </label>
+                      ${!del.isImpeditivo && getTipoBeneficio() === 'INDULTO' ? `
+                        <div class="flex items-center gap-1.5">
+                          <span class="text-[10px] text-blue-700 font-medium">Fração:</span>
+                          <select onchange="atualizarDelito(${pIndex},${dIndex},'fracaoIndulto',this.value)"
+                            class="px-2 py-1 border border-blue-200 rounded-lg text-[11px] bg-blue-50">
+                            <option value="1/5" ${(del.fracaoIndulto||'1/5')==='1/5'?'selected':''}>1/5</option>
+                            <option value="1/3" ${del.fracaoIndulto==='1/3'?'selected':''}>1/3</option>
+                            <option value="1/2" ${del.fracaoIndulto==='1/2'?'selected':''}>1/2</option>
+                          </select>
+                        </div>
+                      ` : ''}
+                      ${proc.delitos.length > 1 ? `<button type="button" onclick="removerDelito(${pIndex},${dIndex})" class="text-[11px] text-red-400 hover:text-red-600">Remover</button>` : ''}
+                    </div>
+                  </div>
+                `).join('')}
+                <button type="button" onclick="adicionarDelito(${pIndex})" class="text-xs font-medium text-brand-600 hover:text-brand-700 transition-colors">
+                  + Adicionar delito
+                </button>
+              </div>
+            </div>
+          </div>
+        `;
+        container.innerHTML += html;
+      });
+    }
+
+    function adicionarProcesso() {
+      processos.push({ numero:'', isExtinto:false, isComutada:false, penaTotalProcesso:{anos:0,meses:0,dias:0}, delitos:[{artigo:'',descricao:'',lei:'',anos:0,meses:0,dias:0,isImpeditivo:false}] });
+      renderizarProcessos();
+    }
+    function removerProcesso(i) { processos.splice(i,1); renderizarProcessos(); }
+    function atualizarProcesso(i,c,v) { processos[i][c]=v; renderizarProcessos(); }
+    function atualizarPenaTotalProcesso(i,c,v) {
+      if (!processos[i].penaTotalProcesso) processos[i].penaTotalProcesso={anos:0,meses:0,dias:0};
+      processos[i].penaTotalProcesso[c]=parseInt(v)||0;
+      renderizarProcessos();
+    }
+    function adicionarDelito(i) {
+      processos[i].delitos.push({artigo:'',descricao:'',lei:'',anos:0,meses:0,dias:0,isImpeditivo:false});
+      renderizarProcessos();
+    }
+    function removerDelito(i,j) { processos[i].delitos.splice(j,1); renderizarProcessos(); }
+    function atualizarDelito(pi,di,campo,valor) {
+      if (['anos','meses','dias'].includes(campo)) {
+        processos[pi].delitos[di][campo] = parseInt(valor)||0;
+      } else if (campo==='isImpeditivo') {
+        processos[pi].delitos[di][campo] = valor;
+      } else {
+        processos[pi].delitos[di][campo] = valor;
+        if (['artigo','lei','anos','meses','dias'].includes(campo)) {
+          const del = processos[pi].delitos[di];
+          del.isImpeditivo = isImpeditivo(del.artigo||'', del.descricao||'', del.lei||'', del.anos||0, del.meses||0, del.dias||0);
+        }
+      }
+      renderizarProcessos();
+    }
+
+    function atualizarInfoPenas() {
+      const pt = converterParaDias(
+        document.getElementById('pena-total-anos').value,
+        document.getElementById('pena-total-meses').value,
+        document.getElementById('pena-total-dias').value
+      );
+      document.getElementById('pena-total-info').textContent = `Equivale a ${pt} dias`;
+
+      const pc = converterParaDias(
+        document.getElementById('cumprida-anos').value,
+        document.getElementById('cumprida-meses').value,
+        document.getElementById('cumprida-dias').value
+      );
+      document.getElementById('cumprida-info').textContent = `Equivale a ${pc} dias`;
+    }
+
+    // ==========================================
+    // CÁLCULO PRINCIPAL
+    // ==========================================
+    function calcularParaDecreto(decretoKey, dados) {
+      const decreto = DECRETOS[decretoKey];
+      const dataBaseDecreto = decreto.dataBase;
+
+      // Retroatividade temporal
+      const diferencaMs = dados.dataGeracao.getTime() - dataBaseDecreto.getTime();
+      const diasAposDataBase = Math.floor(diferencaMs / (1000*60*60*24));
+      const diasCumpridosNaDataBase = Math.max(0, dados.diasCumpridosNoRelatorio - diasAposDataBase);
+
+      // Falta grave
+      const faltaGrave = document.getElementById(`falta-grave-${decretoKey}`).checked;
+
+      // Requisito temporal: cálculo das frações
+      const tipoBeneficio = dados.tipoBeneficio;
+      const reincidente = dados.reincidente;
+
+      // Trava 2/3 impeditivos
+      const reqImpCalc = calcularFracao(dados.anosImp, dados.mesesImp, dados.diasImp, 2, 3);
+
+      let reqNaoImpCalc = { anos:0, meses:0, dias:0, totalDias:0 };
+      let fracaoNaoImpTexto = '';
+
+      if (tipoBeneficio === 'INDULTO') {
+        let totalDiasReq = 0;
+        let fracoesUsadas = new Set();
+        processos.forEach(p => {
+          if (!p.isExtinto) {
+            p.delitos.forEach(d => {
+              if (!d.isImpeditivo) {
+                const fracao = d.fracaoIndulto || '1/5';
+                fracoesUsadas.add(fracao);
+                let num=1, den=5;
+                if (fracao==='1/3'){num=1;den=3;} else if(fracao==='1/2'){num=1;den=2;}
+                totalDiasReq += calcularFracao(d.anos||0, d.meses||0, d.dias||0, num, den).totalDias;
+              }
+            });
+          }
+        });
+        const a = Math.floor(totalDiasReq/(12*DIAS_MES));
+        const m = Math.floor((totalDiasReq%(12*DIAS_MES))/DIAS_MES);
+        const d = totalDiasReq%DIAS_MES;
+        reqNaoImpCalc = {anos:a, meses:m, dias:d, totalDias:totalDiasReq};
+        fracaoNaoImpTexto = fracoesUsadas.size===1 ? [...fracoesUsadas][0] : 'variadas';
+      } else {
+        // COMUTAÇÃO - Art. 11: usa Pena Comum Base SEEU
+        const fracaoNaoImp = reincidente ? [1,4] : [1,5];
+        fracaoNaoImpTexto = reincidente ? '1/4' : '1/5';
+        reqNaoImpCalc = calcularFracao(dados.pcbAnos, dados.pcbMeses, dados.pcbDias, fracaoNaoImp[0], fracaoNaoImp[1]);
+      }
+
+      const requisitoTotalDias = reqImpCalc.totalDias + reqNaoImpCalc.totalDias;
+      const saldoDias = diasCumpridosNaDataBase - requisitoTotalDias;
+      const elegivelTemporal = saldoDias >= 0;
+      const elegivelTotal = elegivelTemporal && !faltaGrave;
+
+      // Calcular benefício concreto da comutação (1/5 do remanescente da pena em 25/12)
+      let beneficioComutacao = null;
+      let remanescente25DezDias = null;
+      if (tipoBeneficio === 'COMUTACAO' && elegivelTotal) {
+        const penaTotalCalculoDias = converterParaDias(dados.pcbAnos, dados.pcbMeses, dados.pcbDias)
+          + converterParaDias(dados.anosImp, dados.mesesImp, dados.diasImp);
+        remanescente25DezDias = Math.max(0, penaTotalCalculoDias - diasCumpridosNaDataBase);
+        const rem = converterParaTempo(remanescente25DezDias);
+        beneficioComutacao = calcularFracao(rem.anos, rem.meses, rem.dias, 1, 5);
+      }
+
+      return {
+        decretoKey, decreto, dataBaseDecreto,
+        diasAposDataBase, diasCumpridosNaDataBase,
+        faltaGrave,
+        reqImpCalc, reqNaoImpCalc, fracaoNaoImpTexto,
+        requisitoTotalDias,
+        saldoDias, elegivelTemporal, elegivelTotal,
+        beneficioComutacao,
+        remanescente25DezDias,
+        cumpridoDataBaseTempo: converterParaTempo(diasCumpridosNaDataBase),
+        saldoTempo: converterParaTempo(Math.abs(saldoDias)),
+        requisitoTotalTempo: converterParaTempo(requisitoTotalDias)
+      };
+    }
+
+    function calcular() {
+      esconderMensagens();
+
+      // Validações
+      const dataGeracaoInput = document.getElementById('data-geracao').value;
+      if (!dataGeracaoInput) { mostrarErro('Informe a data de geração do relatório SEEU.'); return; }
+      const dataGeracao = new Date(dataGeracaoInput + 'T00:00:00');
+
+      const decretoOpcao = document.getElementById('decreto').value;
+      const decretosParaAnalisar = decretoOpcao === 'ambos' ? ['2024','2025'] : [decretoOpcao];
+
+      // Validar: data de geração deve ser >= data-base do decreto mais recente
+      const ultimoDecreto = decretosParaAnalisar[decretosParaAnalisar.length-1];
+      if (dataGeracao < DECRETOS[ultimoDecreto].dataBase) {
+        mostrarErro(`O relatório SEEU (${dataGeracao.toLocaleDateString('pt-BR')}) é anterior à data-base do Decreto ${DECRETOS[ultimoDecreto].numero} (${DECRETOS[ultimoDecreto].dataBase.toLocaleDateString('pt-BR')}). Use um relatório mais recente.`);
+        return;
+      }
+
+      const penaTotalDias = converterParaDias(
+        document.getElementById('pena-total-anos').value,
+        document.getElementById('pena-total-meses').value,
+        document.getElementById('pena-total-dias').value
+      );
+      const diasCumpridosNoRelatorio = converterParaDias(
+        document.getElementById('cumprida-anos').value,
+        document.getElementById('cumprida-meses').value,
+        document.getElementById('cumprida-dias').value
+      );
+      const reincidente = document.getElementById('reincidente').checked;
+      const tipoBeneficio = getTipoBeneficio();
+
+      // Somar penas
+      let anosImp=0, mesesImp=0, diasImp=0, anosNaoImp=0, mesesNaoImp=0, diasNaoImp=0;
+      let somaPenasOriginaisDias = 0;
+
+      processos.forEach(p => {
+        if (!p.isExtinto) {
+          somaPenasOriginaisDias += converterParaDias(p.penaTotalProcesso?.anos||0, p.penaTotalProcesso?.meses||0, p.penaTotalProcesso?.dias||0);
+          p.delitos.forEach(d => {
+            if (d.isImpeditivo) { anosImp+=parseInt(d.anos)||0; mesesImp+=parseInt(d.meses)||0; diasImp+=parseInt(d.dias)||0; }
+            else { anosNaoImp+=parseInt(d.anos)||0; mesesNaoImp+=parseInt(d.meses)||0; diasNaoImp+=parseInt(d.dias)||0; }
+          });
+        }
+      });
+
+      // Normalizar
+      mesesImp+=Math.floor(diasImp/30); diasImp=diasImp%30; anosImp+=Math.floor(mesesImp/12); mesesImp=mesesImp%12;
+      mesesNaoImp+=Math.floor(diasNaoImp/30); diasNaoImp=diasNaoImp%30; anosNaoImp+=Math.floor(mesesNaoImp/12); mesesNaoImp=mesesNaoImp%12;
+
+      const diasImpeditivos = converterParaDias(anosImp, mesesImp, diasImp);
+      const penaComunBaseSEEUDias = Math.max(0, penaTotalDias - diasImpeditivos);
+      const pcb = converterParaTempo(penaComunBaseSEEUDias);
+      const comutacoesAnterioresDias = somaPenasOriginaisDias - penaTotalDias;
+      const temComutacoesAnteriores = comutacoesAnterioresDias > 0;
+      const processosComutados = processos.filter(p => !p.isExtinto && p.isComutada);
+      const processosExtintos = processos.filter(p => p.isExtinto);
+      const processosAtivos = processos.filter(p => !p.isExtinto);
+
+      const dadosBase = {
+        dataGeracao, diasCumpridosNoRelatorio, reincidente, tipoBeneficio,
+        anosImp, mesesImp, diasImp,
+        pcbAnos: pcb.anos, pcbMeses: pcb.meses, pcbDias: pcb.dias
+      };
+
+      // Calcular para cada decreto
+      const resultados = decretosParaAnalisar.map(k => calcularParaDecreto(k, dadosBase));
+
+      // Renderizar relatório
+      const nome = document.getElementById('nome').value || 'Não informado';
+      const rg = document.getElementById('rg').value || '';
+      const penaTotalTempo = converterParaTempo(penaTotalDias);
+      const cumpridoRelatorioTempo = converterParaTempo(diasCumpridosNoRelatorio);
+      const penaImpTempo = {anos:anosImp,meses:mesesImp,dias:diasImp};
+      const penaNaoImpTempo = {anos:anosNaoImp,meses:mesesNaoImp,dias:diasNaoImp};
+      const penaComunBaseTempo = converterParaTempo(penaComunBaseSEEUDias);
+      const somaPenasOrigTempo = converterParaTempo(somaPenasOriginaisDias);
+      const comutAntTempo = converterParaTempo(Math.abs(comutacoesAnterioresDias));
+
+      const dataAtual = new Date();
+
+      document.getElementById('resultado-content').innerHTML = `
+        <div id="relatorio-para-impressao" class="bg-white font-sans" style="font-family:'DM Sans',system-ui,sans-serif">
+          <!-- Botões -->
+          <div class="flex justify-between mb-4 no-print">
+            <button onclick="window.print()" class="px-5 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 text-sm font-semibold flex items-center gap-2 transition-colors">
+              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" /></svg>
+              Imprimir
+            </button>
+            <button onclick="baixarPDF()" class="px-5 py-2.5 bg-brand-600 text-white rounded-xl hover:bg-brand-700 text-sm font-semibold flex items-center gap-2 transition-colors">
+              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+              Baixar PDF
+            </button>
+          </div>
+
+          <!-- Header Relatório -->
+          <div class="bg-ink-800 text-white p-6 rounded-t-2xl">
+            <h1 class="text-xl font-bold text-center mb-1 tracking-wide font-serif">RELATÓRIO TÉCNICO DE EXECUÇÃO PENAL</h1>
+            <p class="text-center text-ink-300 text-sm">Auditoria de Requisitos de ${tipoBeneficio} — ${decretosParaAnalisar.map(k=>'Decreto nº '+DECRETOS[k].numero).join(' e ')}</p>
+          </div>
+
+          <!-- I. QUALIFICAÇÃO -->
+          <div class="border border-ink-200 border-t-0 p-5">
+            <h2 class="text-lg font-bold text-ink-800 mb-3 font-serif border-b border-ink-200 pb-2">I. Qualificação do Executado</h2>
+            <div class="grid grid-cols-2 gap-x-6 gap-y-1.5 text-sm">
+              <p><span class="text-ink-500">Nome:</span> <strong>${nome}</strong></p>
+              ${rg ? `<p><span class="text-ink-500">RG:</span> <strong>${rg}</strong></p>` : ''}
+              <p><span class="text-ink-500">Pena Total (SEEU):</span> <strong>${fmt(penaTotalTempo)}</strong></p>
+              <p><span class="text-ink-500">Condição:</span> <strong>${reincidente?'Reincidente':'Primário'}</strong></p>
+            </div>
+            <div class="mt-3 bg-ink-50 border border-ink-100 rounded-lg p-3 text-xs text-ink-600">
+              <strong>Metodologia:</strong> Relatório SEEU gerado em ${dataGeracao.toLocaleDateString('pt-BR')} (pena cumprida: ${fmt(cumpridoRelatorioTempo)}).
+              Retroatividade aplicada para cada data de referência conforme o decreto analisado.
+            </div>
+          </div>
+
+          <!-- II. SÍNTESE DA PENA -->
+          <div class="border border-ink-200 border-t-0 p-5">
+            <h2 class="text-lg font-bold text-ink-800 mb-3 font-serif border-b border-ink-200 pb-2">II. Síntese da Pena</h2>
+            <div class="grid grid-cols-3 gap-4 text-sm">
+              <div class="bg-ink-50 rounded-lg p-3 text-center">
+                <p class="text-[11px] text-ink-400 font-medium uppercase mb-1">Soma Originais</p>
+                <p class="font-bold text-ink-800">${fmt(somaPenasOrigTempo)}</p>
+              </div>
+              <div class="bg-ink-50 rounded-lg p-3 text-center">
+                <p class="text-[11px] text-ink-400 font-medium uppercase mb-1">Total SEEU</p>
+                <p class="font-bold text-ink-800">${fmt(penaTotalTempo)}</p>
+              </div>
+              <div class="rounded-lg p-3 text-center ${temComutacoesAnteriores?'bg-green-50':'bg-ink-50'}">
+                <p class="text-[11px] ${temComutacoesAnteriores?'text-green-600':'text-ink-400'} font-medium uppercase mb-1">Ajuste</p>
+                <p class="font-bold ${temComutacoesAnteriores?'text-green-700':'text-ink-600'}">
+                  ${temComutacoesAnteriores ? `−${fmt(comutAntTempo)}` : comutacoesAnterioresDias===0 ? 'Sem divergência' : `+${fmt(comutAntTempo)} (Verificar)`}
+                </p>
+              </div>
+            </div>
+            ${temComutacoesAnteriores ? `<div class="mt-3 bg-green-50 border-l-4 border-green-400 p-3 text-xs text-green-800">
+              <strong>Nota:</strong> Divergência decorrente de comutações de decretos anteriores já homologadas.
+              ${processosComutados.length>0?`<br>Processos com comutação anterior: ${processosComutados.map(p=>p.numero).join(', ')}.`:''}
+            </div>` : ''}
+            ${processosExtintos.length>0?`<p class="text-xs text-ink-400 mt-2 italic">Processo${processosExtintos.length>1?'s':''} extinto${processosExtintos.length>1?'s':''} (${processosExtintos.map(p=>p.numero).join(', ')}) corretamente excluído${processosExtintos.length>1?'s':''}.</p>`:''}
+          </div>
+
+          <!-- III. TRIAGEM DE CRIMES -->
+          <div class="border border-ink-200 border-t-0 p-5">
+            <h2 class="text-lg font-bold text-ink-800 mb-3 font-serif border-b border-ink-200 pb-2">III. Triagem de Crimes</h2>
+            ${processosAtivos.map(p => {
+              const temImp = p.delitos.some(d=>d.isImpeditivo);
+              const soma = p.delitos.reduce((a,d)=>a+converterParaDias(d.anos,d.meses,d.dias),0);
+              const somaTempo = converterParaTempo(soma);
+              return `<div class="bg-ink-50 rounded-lg p-3 mb-2 text-sm">
+                <div class="flex justify-between items-center mb-1">
+                  <div class="flex items-center gap-2">
+                    <strong class="text-ink-800">Proc: ${p.numero}</strong>
+                    ${p.isComutada?'<span class="tag tag-purple">Comutada</span>':''}
+                  </div>
+                  <span class="tag ${temImp?'tag-red':'tag-green'}">${temImp?'Impeditivo':'Comum'}</span>
+                </div>
+                ${p.delitos.map(d=>`<p class="text-xs text-ink-600 ml-2">• ${d.artigo} ${d.descricao}${d.lei?' (Lei '+d.lei+')':''} — ${d.anos}a ${d.meses}m ${d.dias}d — <span class="${d.isImpeditivo?'text-red-600':'text-green-600'} font-medium">${d.isImpeditivo?'Impeditivo':'Comum'}</span></p>`).join('')}
+                <p class="text-xs text-ink-400 mt-1">Pena ativa: <strong>${fmt(somaTempo)}</strong></p>
+              </div>`;
+            }).join('')}
+            <div class="grid grid-cols-2 gap-3 mt-3 text-sm">
+              <div class="bg-red-50 rounded-lg p-3 text-center">
+                <p class="text-[11px] text-red-500 font-medium uppercase mb-1">Total Impeditiva</p>
+                <p class="font-bold text-red-700">${fmt(penaImpTempo)}</p>
+              </div>
+              <div class="bg-green-50 rounded-lg p-3 text-center">
+                <p class="text-[11px] text-green-500 font-medium uppercase mb-1">Pena Comum Base (SEEU)</p>
+                <p class="font-bold text-green-700">${fmt(penaComunBaseTempo)}</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- IV. MEMÓRIA DE CÁLCULO POR DECRETO -->
+          ${resultados.map((r,idx) => `
+          <div class="border border-ink-200 border-t-0 p-5">
+            <h2 class="text-lg font-bold text-ink-800 mb-3 font-serif border-b border-ink-200 pb-2">
+              IV${decretosParaAnalisar.length>1?(idx===0?'a':'b'):''}.  Memória de Cálculo — Decreto nº ${r.decreto.numero}
+            </h2>
+            <p class="text-xs text-ink-500 mb-3">Data de referência: <strong>${r.dataBaseDecreto.toLocaleDateString('pt-BR')}</strong> · Retroatividade: −${r.diasAposDataBase} dia${r.diasAposDataBase!==1?'s':''} · Pena cumprida em ${r.dataBaseDecreto.toLocaleDateString('pt-BR')}: <strong>${fmt(r.cumpridoDataBaseTempo)}</strong></p>
+
+            ${diasImpeditivos > 0 ? `<div class="bg-red-50 border border-red-100 rounded-lg p-3 mb-3 text-sm">
+              <p class="text-xs font-semibold text-red-700 uppercase mb-1">Trava Impeditiva (Art. 7º, par. único)</p>
+              <p>${fmt(penaImpTempo)} × 2/3 = <strong>${fmt({anos:r.reqImpCalc.anos,meses:r.reqImpCalc.meses,dias:r.reqImpCalc.dias})}</strong></p>
+            </div>` : ''}
+
+            ${penaComunBaseSEEUDias > 0 ? `<div class="bg-green-50 border border-green-100 rounded-lg p-3 mb-3 text-sm">
+              <p class="text-xs font-semibold text-green-700 uppercase mb-1">Carga Comum (${reincidente?'Reincidente':'Primário'})</p>
+              <p>Pena Comum Base: <strong>${fmt(penaComunBaseTempo)}</strong></p>
+              <p>Fração de ${tipoBeneficio} (${r.fracaoNaoImpTexto}): <strong>${fmt({anos:r.reqNaoImpCalc.anos,meses:r.reqNaoImpCalc.meses,dias:r.reqNaoImpCalc.dias})}</strong></p>
+            </div>` : ''}
+
+            <div class="bg-ink-100 rounded-lg p-4 text-sm">
+              <div class="grid grid-cols-2 gap-4">
+                <div>
+                  <p class="text-[11px] text-ink-400 font-medium uppercase">Requisito Necessário</p>
+                  <p class="text-lg font-bold text-ink-800">${fmt(r.requisitoTotalTempo)}</p>
+                </div>
+                <div>
+                  <p class="text-[11px] text-ink-400 font-medium uppercase">Pena Cumprida (${r.dataBaseDecreto.toLocaleDateString('pt-BR').substring(0,5)})</p>
+                  <p class="text-lg font-bold text-ink-800">${fmt(r.cumpridoDataBaseTempo)}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+          `).join('')}
+
+          <!-- V. CONCLUSÃO -->
+          <div class="border border-ink-200 border-t-0 p-5 rounded-b-2xl">
+            <h2 class="text-lg font-bold text-ink-800 mb-4 font-serif border-b border-ink-200 pb-2">V. Conclusão da Auditoria</h2>
+
+            ${resultados.map(r => `
+              <div class="mb-4 p-4 rounded-xl border-2 ${r.elegivelTotal?'border-green-300 bg-green-50':'border-red-200 bg-red-50'}">
+                <div class="flex items-center justify-between mb-3">
+                  <h3 class="font-bold text-ink-800">Decreto nº ${r.decreto.numero}</h3>
+                  <span class="px-3 py-1.5 rounded-lg text-sm font-bold ${r.elegivelTotal?'bg-green-600 text-white':'bg-red-600 text-white'}">
+                    ${r.elegivelTotal ? '✅ ELEGÍVEL' : '❌ INELEGÍVEL'}
+                  </span>
+                </div>
+                <table class="w-full text-sm">
+                  <tr class="border-b ${r.elegivelTotal?'border-green-200':'border-red-200'}">
+                    <td class="py-1.5 text-ink-600">Requisito Objetivo (Temporal)</td>
+                    <td class="py-1.5 font-bold ${r.elegivelTemporal?'text-green-700':'text-red-700'}">${r.elegivelTemporal?'✅ Atingido':'❌ Não atingido'}</td>
+                    <td class="py-1.5 text-xs text-ink-500">${r.elegivelTemporal?'Superado em +':'Faltam '}${fmtLongo(r.saldoTempo)}</td>
+                  </tr>
+                  <tr class="border-b ${r.elegivelTotal?'border-green-200':'border-red-200'}">
+                    <td class="py-1.5 text-ink-600">Requisito Subjetivo (Faltas)</td>
+                    <td class="py-1.5 font-bold ${r.faltaGrave?'text-red-700':'text-green-700'}">${r.faltaGrave?'❌ Falta grave registrada':'✅ Sem falta grave'}</td>
+                    <td class="py-1.5 text-xs text-ink-500">Período: ${r.decretoKey==='2024'?'26/12/2023':'26/12/2024'} a 25/12/${r.decretoKey}</td>
+                  </tr>
+                </table>
+
+                ${r.elegivelTotal && tipoBeneficio==='COMUTACAO' && r.beneficioComutacao ? `
+                  <div class="mt-3 bg-white rounded-lg border border-green-200 p-3">
+                    <p class="text-xs font-semibold text-green-800 uppercase mb-1">Benefício Concreto — Comutação de 1/5</p>
+                    <p class="text-sm text-ink-700">Redução de <strong class="text-green-700">${fmt({anos:r.beneficioComutacao.anos,meses:r.beneficioComutacao.meses,dias:r.beneficioComutacao.dias})}</strong> sobre o remanescente de pena em ${r.dataBaseDecreto.toLocaleDateString('pt-BR')}: <strong>${fmt(converterParaTempo(r.remanescente25DezDias))}</strong>.</p>
+                    <p class="text-sm text-ink-700 mt-1">Nova pena estimada: <strong>${fmt(converterParaTempo(penaTotalDias - r.beneficioComutacao.totalDias))}</strong></p>
+                  </div>
+                ` : ''}
+
+                <div class="mt-3 bg-white rounded-lg border ${r.elegivelTotal?'border-green-200':'border-red-200'} p-3">
+                  <p class="text-xs font-bold text-ink-700 uppercase mb-1">Parecer</p>
+                  <p class="text-sm text-ink-700 leading-relaxed">
+                    ${r.elegivelTotal
+                      ? `O apenado <strong>${nome}</strong> faz jus ao benefício ${tipoBeneficio==='INDULTO'?'do <strong>Indulto</strong>':'da <strong>Comutação de Pena</strong>'} previsto no Decreto nº ${r.decreto.numero}.
+                         ${diasImpeditivos>0?'A trava de 2/3 sobre crimes impeditivos foi integralmente cumprida.':''}
+                         ${temComutacoesAnteriores?'A pena base utilizada já reflete comutações anteriormente deferidas.':''}`
+                      : `O apenado <strong>${nome}</strong> <u>não</u> faz jus ao benefício ${tipoBeneficio==='INDULTO'?'do <strong>Indulto</strong>':'da <strong>Comutação de Pena</strong>'} previsto no Decreto nº ${r.decreto.numero}.
+                         ${!r.elegivelTemporal?`Faltam ${fmtLongo(r.saldoTempo)} para o requisito temporal.`:''}
+                         ${r.faltaGrave?'Há falta grave registrada no período de verificação.':''}`
+                    }
+                  </p>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+
+          <!-- Rodapé -->
+          <div class="text-center text-[10px] text-ink-400 mt-4 pt-3 border-t border-ink-100">
+            <p>Relatório de Auditoria de Execução Penal (NUSPEN/RJ) · Gerado em ${dataAtual.toLocaleDateString('pt-BR')} às ${dataAtual.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}.</p>
+            <p class="mt-0.5">App criado em 30/12/25 pelo Defensor Público (DPERJ) Carlos Alberto de F. e Silva Jr.</p>
+          </div>
+        </div>
+      `;
+
+      document.getElementById('form-section').classList.add('hidden');
+      document.getElementById('resultado-section').classList.remove('hidden');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    // ==========================================
+    // PDF DOWNLOAD
+    // ==========================================
+    function baixarPDF() {
+      const elemento = document.getElementById('relatorio-para-impressao');
+      const nome = document.getElementById('nome').value || 'Relatorio';
+      const nomeArquivo = nome.replace(/\s+/g,'_') + '_Auditoria_Execucao_Penal.pdf';
+
+      const botoes = elemento.querySelector('.no-print');
+      if (botoes) botoes.style.display = 'none';
+
+      const opt = {
+        margin: 8,
+        filename: nomeArquivo,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+      };
+
+      if (typeof html2pdf !== 'undefined') {
+        html2pdf().set(opt).from(elemento).save().then(() => { if (botoes) botoes.style.display = 'flex'; });
+      } else {
+        alert('Para baixar como PDF, use Ctrl+P e selecione "Salvar como PDF".');
+        if (botoes) botoes.style.display = 'flex';
+        window.print();
+      }
+    }
+
+    function voltar() {
+      document.getElementById('resultado-section').classList.add('hidden');
+      document.getElementById('form-section').classList.remove('hidden');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function novoCalculo() {
+      document.getElementById('nome').value = '';
+      document.getElementById('rg').value = '';
+      document.getElementById('pena-total-anos').value = 0;
+      document.getElementById('pena-total-meses').value = 0;
+      document.getElementById('pena-total-dias').value = 0;
+      document.getElementById('cumprida-anos').value = 0;
+      document.getElementById('cumprida-meses').value = 0;
+      document.getElementById('cumprida-dias').value = 0;
+      document.getElementById('reincidente').checked = false;
+      document.getElementById('falta-grave-2024').checked = false;
+      document.getElementById('falta-grave-2025').checked = false;
+      document.getElementById('data-geracao').value = '';
+
+      processos = [{ numero:'', isExtinto:false, isComutada:false, penaTotalProcesso:{anos:0,meses:0,dias:0}, delitos:[{artigo:'',descricao:'',lei:'',anos:0,meses:0,dias:0,isImpeditivo:false}] }];
+      renderizarProcessos();
+      atualizarInfoPenas();
+      esconderMensagens();
+      voltar();
+    }
+
+    // ==========================================
+    // EVENTOS
+    // ==========================================
+    document.getElementById('upload-area').addEventListener('click', () => {
+      document.getElementById('pdf-input').click();
+    });
+
+    // Drag and drop
+    const uploadArea = document.getElementById('upload-area');
+    uploadArea.addEventListener('dragover', (e) => { e.preventDefault(); uploadArea.classList.add('border-brand-500','bg-brand-50/30'); });
+    uploadArea.addEventListener('dragleave', () => { uploadArea.classList.remove('border-brand-500','bg-brand-50/30'); });
+    uploadArea.addEventListener('drop', (e) => {
+      e.preventDefault();
+      uploadArea.classList.remove('border-brand-500','bg-brand-50/30');
+      const file = e.dataTransfer.files[0];
+      if (file && file.type === 'application/pdf') {
+        const input = document.getElementById('pdf-input');
+        const dt = new DataTransfer();
+        dt.items.add(file);
+        input.files = dt.files;
+        input.dispatchEvent(new Event('change'));
+      }
+    });
+
+    document.getElementById('pdf-input').addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      esconderMensagens();
+      document.getElementById('upload-content').classList.add('hidden');
+      document.getElementById('loading-content').classList.remove('hidden');
+
+      try {
+        const texto = await extrairTextoPDF(file);
+        const dados = parsearPDF(texto);
+
+        document.getElementById('nome').value = dados.nome || '';
+        document.getElementById('rg').value = dados.rg || '';
+        document.getElementById('pena-total-anos').value = dados.penaTotalImposta?.anos || 0;
+        document.getElementById('pena-total-meses').value = dados.penaTotalImposta?.meses || 0;
+        document.getElementById('pena-total-dias').value = dados.penaTotalImposta?.dias || 0;
+        document.getElementById('cumprida-anos').value = dados.penaCumprida?.anos || 0;
+        document.getElementById('cumprida-meses').value = dados.penaCumprida?.meses || 0;
+        document.getElementById('cumprida-dias').value = dados.penaCumprida?.dias || 0;
+
+        if (dados.dataGeracao) {
+          dataGeracaoRelatorio = dados.dataGeracao;
+          document.getElementById('data-geracao').value = dados.dataGeracao.toISOString().split('T')[0];
+        }
+
+        processos = dados.processos.length > 0 ? dados.processos : [{ numero:'', isExtinto:false, isComutada:false, penaTotalProcesso:{anos:0,meses:0,dias:0}, delitos:[{artigo:'',descricao:'',lei:'',anos:0,meses:0,dias:0,isImpeditivo:false}] }];
+
+        renderizarProcessos();
+        atualizarInfoPenas();
+
+        const qtdP = dados.processos.length;
+        const qtdD = dados.processos.reduce((a,p) => a + p.delitos.length, 0);
+        const qtdI = dados.processos.reduce((a,p) => a + p.delitos.filter(d=>d.isImpeditivo).length, 0);
+        const qtdE = dados.processos.filter(p=>p.isExtinto).length;
+
+        mostrarSucesso(`
+          <strong>✓ Extração concluída</strong><br>
+          <span class="text-xs">${qtdP} processo(s) · ${qtdD} delito(s) · ${qtdI} impeditivo(s) · ${qtdE} extinto(s)</span><br>
+          <span class="text-[11px] text-green-600">Verifique os dados e clique em "Calcular Elegibilidade"</span>
+        `);
+      } catch (error) {
+        console.error('Erro:', error);
+        mostrarErro('Erro ao processar PDF: ' + error.message);
+      } finally {
+        document.getElementById('upload-content').classList.remove('hidden');
+        document.getElementById('loading-content').classList.add('hidden');
+        e.target.value = '';
+      }
+    });
+
+    ['pena-total-anos','pena-total-meses','pena-total-dias','cumprida-anos','cumprida-meses','cumprida-dias'].forEach(id => {
+      document.getElementById(id).addEventListener('input', atualizarInfoPenas);
+    });
+
+    // Inicializar
+    processos = [{ numero:'', isExtinto:false, isComutada:false, penaTotalProcesso:{anos:0,meses:0,dias:0}, delitos:[{artigo:'',descricao:'',lei:'',anos:0,meses:0,dias:0,isImpeditivo:false}] }];
+    renderizarProcessos();
+  </script>
+</body>
+</html>
