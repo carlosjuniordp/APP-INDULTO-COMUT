@@ -741,13 +741,15 @@
     function adicionarProcesso() {
       processos.push({ numero:'', isExtinto:false, isComutada:false, penaTotalProcesso:{anos:0,meses:0,dias:0}, delitos:[{artigo:'',descricao:'',lei:'',anos:0,meses:0,dias:0,isImpeditivo:false}] });
       renderizarProcessos();
+      recalcularPenaTotalSEEU();
     }
-    function removerProcesso(i) { processos.splice(i,1); renderizarProcessos(); }
-    function atualizarProcesso(i,c,v) { processos[i][c]=v; renderizarProcessos(); }
+    function removerProcesso(i) { processos.splice(i,1); renderizarProcessos(); recalcularPenaTotalSEEU(); }
+    function atualizarProcesso(i,c,v) { processos[i][c]=v; renderizarProcessos(); if(c==='isExtinto') recalcularPenaTotalSEEU(); }
     function atualizarPenaTotalProcesso(i,c,v) {
       if (!processos[i].penaTotalProcesso) processos[i].penaTotalProcesso={anos:0,meses:0,dias:0};
       processos[i].penaTotalProcesso[c]=parseInt(v)||0;
       renderizarProcessos();
+      recalcularPenaTotalSEEU();
     }
     function adicionarDelito(i) {
       processos[i].delitos.push({artigo:'',descricao:'',lei:'',anos:0,meses:0,dias:0,isImpeditivo:false});
@@ -783,6 +785,60 @@
         document.getElementById('cumprida-dias').value
       );
       document.getElementById('cumprida-info').textContent = `Equivale a ${pc} dias`;
+    }
+
+    // ==========================================
+    // RECALCULAR PENA TOTAL SEEU AO MUDAR EXTINÇÃO/REMOÇÃO
+    // ==========================================
+    // Guarda o valor original do SEEU para referência
+    let penaTotalSEEUOriginal = null;
+
+    function recalcularPenaTotalSEEU() {
+      // Se nunca salvamos o original, salvar agora (antes de qualquer modificação)
+      if (penaTotalSEEUOriginal === null) {
+        penaTotalSEEUOriginal = {
+          anos: parseInt(document.getElementById('pena-total-anos').value)||0,
+          meses: parseInt(document.getElementById('pena-total-meses').value)||0,
+          dias: parseInt(document.getElementById('pena-total-dias').value)||0
+        };
+      }
+
+      // Somar penas dos processos ATIVOS (não extintos)
+      let somaAtivosDias = 0;
+      processos.forEach(p => {
+        if (!p.isExtinto) {
+          somaAtivosDias += converterParaDias(p.penaTotalProcesso?.anos||0, p.penaTotalProcesso?.meses||0, p.penaTotalProcesso?.dias||0);
+        }
+      });
+
+      // Se todos os processos estão ativos, usar o original do SEEU (pode ter ajustes de comutações anteriores)
+      const todosAtivos = processos.every(p => !p.isExtinto);
+      const originalDias = converterParaDias(penaTotalSEEUOriginal.anos, penaTotalSEEUOriginal.meses, penaTotalSEEUOriginal.dias);
+      
+      // Usar o menor entre: original SEEU e a soma dos ativos
+      // (pois SEEU pode ter ajustes de comutações, a soma ativa deve refletir remoções de extintos)
+      let novaPenaTotal;
+      if (todosAtivos) {
+        // Manter o valor original do SEEU quando todos estão ativos
+        novaPenaTotal = penaTotalSEEUOriginal;
+      } else {
+        // Quando há processos extintos, calcular proporcionalmente:
+        // Se SEEU original < soma originais, há ajuste (comutações anteriores).
+        // Calcular pena dos extintos e subtrair do SEEU original.
+        let somaExtintosDias = 0;
+        processos.forEach(p => {
+          if (p.isExtinto) {
+            somaExtintosDias += converterParaDias(p.penaTotalProcesso?.anos||0, p.penaTotalProcesso?.meses||0, p.penaTotalProcesso?.dias||0);
+          }
+        });
+        const novoPenaDias = Math.max(0, originalDias - somaExtintosDias);
+        novaPenaTotal = converterParaTempo(novoPenaDias);
+      }
+
+      document.getElementById('pena-total-anos').value = novaPenaTotal.anos;
+      document.getElementById('pena-total-meses').value = novaPenaTotal.meses;
+      document.getElementById('pena-total-dias').value = novaPenaTotal.dias;
+      atualizarInfoPenas();
     }
 
     // ==========================================
@@ -903,10 +959,13 @@
       // Somar penas
       let anosImp=0, mesesImp=0, diasImp=0, anosNaoImp=0, mesesNaoImp=0, diasNaoImp=0;
       let somaPenasOriginaisDias = 0;
+      let somaPenasAtivasDias = 0;
 
       processos.forEach(p => {
+        const penaProcDias = converterParaDias(p.penaTotalProcesso?.anos||0, p.penaTotalProcesso?.meses||0, p.penaTotalProcesso?.dias||0);
+        somaPenasOriginaisDias += penaProcDias;
         if (!p.isExtinto) {
-          somaPenasOriginaisDias += converterParaDias(p.penaTotalProcesso?.anos||0, p.penaTotalProcesso?.meses||0, p.penaTotalProcesso?.dias||0);
+          somaPenasAtivasDias += penaProcDias;
           p.delitos.forEach(d => {
             if (d.isImpeditivo) { anosImp+=parseInt(d.anos)||0; mesesImp+=parseInt(d.meses)||0; diasImp+=parseInt(d.dias)||0; }
             else { anosNaoImp+=parseInt(d.anos)||0; mesesNaoImp+=parseInt(d.meses)||0; diasNaoImp+=parseInt(d.dias)||0; }
@@ -921,7 +980,10 @@
       const diasImpeditivos = converterParaDias(anosImp, mesesImp, diasImp);
       const penaComunBaseSEEUDias = Math.max(0, penaTotalDias - diasImpeditivos);
       const pcb = converterParaTempo(penaComunBaseSEEUDias);
-      const comutacoesAnterioresDias = somaPenasOriginaisDias - penaTotalDias;
+      
+      // Comutações anteriores: comparar soma de TODOS os processos originais vs pena SEEU original
+      const penaSEEUOrigDias = penaTotalSEEUOriginal ? converterParaDias(penaTotalSEEUOriginal.anos, penaTotalSEEUOriginal.meses, penaTotalSEEUOriginal.dias) : penaTotalDias;
+      const comutacoesAnterioresDias = somaPenasOriginaisDias - penaSEEUOrigDias;
       const temComutacoesAnteriores = comutacoesAnterioresDias > 0;
       const processosComutados = processos.filter(p => !p.isExtinto && p.isComutada);
       const processosExtintos = processos.filter(p => p.isExtinto);
@@ -945,6 +1007,7 @@
       const penaNaoImpTempo = {anos:anosNaoImp,meses:mesesNaoImp,dias:diasNaoImp};
       const penaComunBaseTempo = converterParaTempo(penaComunBaseSEEUDias);
       const somaPenasOrigTempo = converterParaTempo(somaPenasOriginaisDias);
+      const somaPenasAtivasTempo = converterParaTempo(somaPenasAtivasDias);
       const comutAntTempo = converterParaTempo(Math.abs(comutacoesAnterioresDias));
 
       const dataAtual = new Date();
@@ -990,7 +1053,7 @@
             <div class="grid grid-cols-3 gap-4 text-sm">
               <div class="bg-ink-50 rounded-lg p-3 text-center">
                 <p class="text-[11px] text-ink-400 font-medium uppercase mb-1">Soma Originais</p>
-                <p class="font-bold text-ink-800">${fmt(somaPenasOrigTempo)}</p>
+                <p class="font-bold text-ink-800">${fmt(somaPenasAtivasTempo)}</p>
               </div>
               <div class="bg-ink-50 rounded-lg p-3 text-center">
                 <p class="text-[11px] text-ink-400 font-medium uppercase mb-1">Total SEEU</p>
@@ -1186,6 +1249,7 @@
       document.getElementById('falta-grave-2025').checked = false;
       document.getElementById('data-geracao').value = '';
 
+      penaTotalSEEUOriginal = null;
       processos = [{ numero:'', isExtinto:false, isComutada:false, penaTotalProcesso:{anos:0,meses:0,dias:0}, delitos:[{artigo:'',descricao:'',lei:'',anos:0,meses:0,dias:0,isImpeditivo:false}] }];
       renderizarProcessos();
       atualizarInfoPenas();
@@ -1234,6 +1298,13 @@
         document.getElementById('pena-total-anos').value = dados.penaTotalImposta?.anos || 0;
         document.getElementById('pena-total-meses').value = dados.penaTotalImposta?.meses || 0;
         document.getElementById('pena-total-dias').value = dados.penaTotalImposta?.dias || 0;
+
+        // Salvar valor original do SEEU para recálculo em caso de extinção
+        penaTotalSEEUOriginal = {
+          anos: dados.penaTotalImposta?.anos || 0,
+          meses: dados.penaTotalImposta?.meses || 0,
+          dias: dados.penaTotalImposta?.dias || 0
+        };
         document.getElementById('cumprida-anos').value = dados.penaCumprida?.anos || 0;
         document.getElementById('cumprida-meses').value = dados.penaCumprida?.meses || 0;
         document.getElementById('cumprida-dias').value = dados.penaCumprida?.dias || 0;
