@@ -421,39 +421,118 @@
       const texto = (artigo + ' ' + descricao + ' ' + lei).toLowerCase();
       const penaMeses = (parseInt(anos)||0) * 12 + (parseInt(meses)||0);
 
+      // ============================================================
+      // Art. 1º, XVIII dos Decretos 12.338/2024 e 12.790/2025:
+      // "tráfico ilícito de drogas, nos termos do art. 33, caput e §1º,
+      //  arts. 34 a 37 e art. 39 da Lei 11.343/06"
+      //
+      // O §4º do art. 33 (tráfico privilegiado) NÃO é impeditivo:
+      // - NÃO é hediondo (STF, HC 118.533)
+      // - NÃO é equiparado a hediondo
+      // - NÃO está listado no inciso XVIII dos decretos
+      // - Fração de progressão = 1/6 (Comum), não 40% (Hediondo)
+      // ============================================================
+
       // Art. 33 Lei 11.343 - Tráfico
-      // Privilegiado (§4º): pena < 5 anos = NÃO impeditivo (STF)
-      if (/art\.?\s*33\b/i.test(artigo) && /11\.?343|drogas/i.test(lei)) {
-        if (penaMeses > 0 && penaMeses < 60) return false;
+      if (/art\.?\s*33\b/i.test(artigo) && /11\.?343|drogas/i.test(texto)) {
+        // §4º (privilegiado): NÃO impeditivo - detectar por §4º ou fração 1/6 Comum
+        if (/§\s*4º?|privilegiad/i.test(texto)) return false;
+        if (/1\/6\s*[-–]?\s*comum|\[comum\]/i.test(texto)) return false;
+        // Caput e §1º são impeditivos
         return true;
       }
       // Art. 34 a 37, 39 Lei 11.343
-      if (/art\.?\s*(34|35|36|37|39)\b/i.test(artigo) && /11\.?343|drogas/i.test(lei)) return true;
-      // Homicídio qualificado
-      if (/art\.?\s*121/i.test(artigo) && /§\s*2|qualificado/i.test(texto)) return true;
-      // Roubo §2º-A (arma de fogo - hediondo)
-      if (/art\.?\s*157/i.test(artigo) && (/§\s*2º?-?A|arma\s+de\s+fogo/i.test(texto) || /40%/i.test(texto))) return true;
-      // Latrocínio (Art. 157 §3º)
+      if (/art\.?\s*(34|35|36|37|39)\b/i.test(artigo) && /11\.?343|drogas/i.test(texto)) return true;
+
+      // Art. 1º, I - Crimes hediondos (Lei 8.072/90)
+      // Homicídio qualificado (art. 121, §2º e §2º-A)
+      if (/art\.?\s*121/i.test(artigo) && /§\s*2|qualificado|hediondo|40%/i.test(texto)) return true;
+      // Lesão corporal seguida de morte / gravíssima hedionda
+      if (/art\.?\s*129/i.test(artigo) && /hediondo|40%/i.test(texto)) return true;
+      // Roubo §2º-A (arma de fogo - hediondo desde 13.964/2019)
+      if (/art\.?\s*157/i.test(artigo) && (/§\s*2º?-?A|arma\s+de\s+fogo/i.test(texto) || /40%|hediondo/i.test(texto))) return true;
+      // Latrocínio (Art. 157 §3º resultado morte)
       if (/art\.?\s*157/i.test(artigo) && /§\s*3|resultado\s*morte|latrocínio/i.test(texto)) return true;
-      // Estupro
-      if (/art\.?\s*(213|217-?a)/i.test(artigo)) return true;
-      // Extorsão mediante sequestro
+      // Extorsão qualificada morte (art. 158 §3º)
+      if (/art\.?\s*158/i.test(artigo) && /§\s*3|resultado\s*morte|hediondo|40%/i.test(texto)) return true;
+      // Extorsão mediante sequestro (art. 159)
       if (/art\.?\s*159/i.test(artigo)) return true;
-      // Tortura
-      if (/tortura/i.test(texto) || /9\.?455/i.test(lei)) return true;
-      // Lavagem de dinheiro (pena > 4 anos)
+      // Estupro e estupro de vulnerável (arts. 213, 217-A)
+      if (/art\.?\s*(213|217-?a)/i.test(artigo)) return true;
+      // Epidemia com morte (art. 267 §1º)
+      if (/art\.?\s*267/i.test(artigo) && /hediondo|40%/i.test(texto)) return true;
+      // Falsificação de medicamentos (art. 273)
+      if (/art\.?\s*273/i.test(artigo)) return true;
+      // Genocídio (Lei 2.889/56)
+      if (/2\.?889|genocídio/i.test(texto)) return true;
+      // Posse/porte arma proibida (art. 16 Lei 10.826)
+      if (/art\.?\s*16/i.test(artigo) && /10\.?826|desarmamento/i.test(texto)) return true;
+      // Comércio ilegal armas (art. 17), tráfico internacional (art. 18) Lei 10.826
+      if (/art\.?\s*(17|18)/i.test(artigo) && /10\.?826/i.test(texto)) return true;
+
+      // Art. 1º, II - Tortura (Lei 9.455/97)
+      if (/tortura/i.test(texto) || /9\.?455/i.test(texto)) return true;
+
+      // Art. 1º, III - Lavagem de dinheiro (Lei 9.613/98) - exceto pena ≤ 4 anos
       if (/9\.?613|lavagem/i.test(texto)) {
         if (penaMeses > 48) return true;
-        return false; // pena ≤ 4 anos = não impeditivo
+        return false;
       }
-      // Organização criminosa
-      if (/12\.?850|organiza/i.test(texto)) return true;
-      // Crimes contra o Estado Democrático
-      if (/estado\s+democr/i.test(texto)) return true;
-      // Violência contra a mulher (Maria da Penha)
-      if (/maria\s+da\s+penha|11\.?340|violência.*mulher/i.test(texto)) return true;
-      // Abuso de autoridade
+
+      // Art. 1º, IV - Organização criminosa (Lei 12.850/13) e art. 288-A CP
+      if (/12\.?850/i.test(texto)) return true;
+      if (/art\.?\s*288-?a/i.test(artigo)) return true;
+
+      // Art. 1º, V - Terrorismo (Lei 13.260/16)
+      if (/13\.?260|terrorismo/i.test(texto)) return true;
+
+      // Art. 1º, VI - Crime racial (Lei 7.716/89)
+      if (/7\.?716|racismo/i.test(texto)) return true;
+
+      // Art. 1º, VII - Redução a condição análoga de escravo / tráfico de pessoas (arts. 149, 149-A CP)
+      if (/art\.?\s*149/i.test(artigo) && /2848|c[oó]digo\s*penal/i.test(texto)) return true;
+
+      // Art. 1º, VIII - Genocídio (já tratado acima)
+
+      // Art. 1º, IX - Crimes contra sistema financeiro (Lei 7.492/86) - exceto pena ≤ 4 anos
+      if (/7\.?492/i.test(texto)) {
+        if (penaMeses > 48) return true;
+        return false;
+      }
+
+      // Art. 1º, X - Licitações (Lei 14.133/21 / Lei 8.666/93) - exceto pena ≤ 4 anos
+      if (/14\.?133|8\.?666/i.test(texto)) {
+        if (penaMeses > 48) return true;
+        return false;
+      }
+
+      // Art. 1º, XI - Crimes sexuais (arts. 215, 216-A, 218, 218-A/B/C CP)
+      if (/art\.?\s*(215|216-?a|218|218-?[a-c])/i.test(artigo)) return true;
+
+      // Art. 1º, XII - Peculato, corrupção etc. (arts. 312-319, 333 CP) - exceto pena ≤ 4 anos
+      if (/art\.?\s*(312|313|314|315|316|317|318|319|333)\b/i.test(artigo) && /2848|c[oó]digo\s*penal/i.test(texto)) {
+        if (penaMeses > 48) return true;
+        return false;
+      }
+
+      // Art. 1º, XIII - ECA (arts. 239-244-B Lei 8.069/90)
+      if (/8\.?069/i.test(texto) && /art\.?\s*(239|240|241|242|243|244)/i.test(artigo)) return true;
+
+      // Art. 1º, XIV - Crime ambiental (Lei 9.605/98)
+      if (/9\.?605/i.test(texto)) return true;
+
+      // Art. 1º, XV - Crimes contra o Estado Democrático (arts. 359-I a 359-R CP)
+      if (/estado\s+democr|art\.?\s*359/i.test(texto)) return true;
+
+      // Art. 1º, XVI - Abuso de autoridade (Lei 13.869/19)
       if (/abuso.*autoridade|13\.?869/i.test(texto)) return true;
+
+      // Art. 1º, XVII - Violência contra a mulher
+      if (/maria\s+da\s+penha|11\.?340|violência.*mulher|13\.?718|14\.?192/i.test(texto)) return true;
+      if (/art\.?\s*(121-?a|147-?a)/i.test(artigo)) return true;
+
+      // Art. 1º, XIX - Código Penal Militar (correspondente aos incisos I-XVIII)
+      if (/1\.?001.*penal\s+militar|c[oó]digo\s+penal\s+militar/i.test(texto)) return true;
 
       return false;
     }
@@ -475,7 +554,7 @@
 
     function parsearPDF(textoOriginal) {
       const texto = textoOriginal.replace(/\s+/g, ' ').trim();
-      console.log('=== PARSER V8 ===');
+      console.log('=== PARSER V9 (§4º + penas + pena total) ===');
       console.log('Texto normalizado:', texto.length, 'chars');
 
       const dados = {
@@ -537,8 +616,8 @@
 
         console.log(`\n--- Processo ${i+1}: ${numero} ${isExtinto?'(EXTINTO)':''} ${isComutada?'(COMUTADA)':''} ---`);
 
-        // Pena total do processo
-        const penaProcMatch = secaoProc.match(/(\d+)a(\d+)m(\d+)d\s*-\s*PENA\s*ORIGINÁRIA/i);
+        // Pena total do processo - pode ser "PENA ORIGINÁRIA", "APELAÇÃO CRIMINAL", etc.
+        const penaProcMatch = secaoProc.match(/(\d+)a(\d+)m(\d+)d\s*-\s*(?:PENA\s*ORIGINÁRIA|APELAÇÃO\s*CRIMINAL|[A-ZÀ-ÿ\s]+)/i);
         const penaTotalProcesso = penaProcMatch ?
           { anos: parseInt(penaProcMatch[1]), meses: parseInt(penaProcMatch[2]), dias: parseInt(penaProcMatch[3]) }
           : { anos: 0, meses: 0, dias: 0 };
@@ -547,8 +626,8 @@
         const delitoRegex = /ART\s+(\d+)\s*[-:]?\s*([A-Za-zÀ-ÿ\s]+?)\s*Artigo\s+da\s+Lei:\s*Lei:\s*(\d+\/\d+)/gi;
         const delitosTemp = [...secaoProc.matchAll(delitoRegex)];
 
-        // Penas
-        const penaRegex = /Pena\s+Imposta:\s*(\d+)\s*ano\(s\)\s*(\d+)\s*mês\(es\)\s*(\d+)\s*dia\(s\)/gi;
+        // Penas - formato SEEU: "Pena Imposta: X ano(s), Y mês(es) e Z dia(s)"
+        const penaRegex = /Pena\s+Imposta:\s*(\d+)\s*ano\(s\)\s*,?\s*(\d+)\s*mês\(es\)\s*(?:e\s+)?(\d+)\s*dia\(s\)/gi;
         const penasTemp = [...secaoProc.matchAll(penaRegex)];
 
         const delitos = [];
@@ -564,14 +643,19 @@
           const fracaoProgressao = secaoDelito.match(/Fração\s+adotada\s+no\s+cálculo\s+para\s+progressão\s+de\s+regime:\s*([^\n]+)/i);
           const fracaoTexto = fracaoProgressao ? fracaoProgressao[1].trim() : '';
           const isHediondoPelaFracao = /40%|hediondo/i.test(fracaoTexto);
+          const isFracaoComum = /1\/6\s*-?\s*Comum/i.test(fracaoTexto);
 
           const temParag2A = /§\s*2º?-?A|2º-A/i.test(secaoDelito);
           const temArmaFogo = /arma\s+de\s+fogo/i.test(secaoDelito);
+          // Detectar §4º (tráfico privilegiado) - no campo "Pena:" do SEEU
+          const temParag4 = /§\s*4º?[:\s]/i.test(secaoDelito);
 
           let descricaoEnriquecida = descricao;
           if (temParag2A) descricaoEnriquecida += ' §2º-A';
           if (temArmaFogo) descricaoEnriquecida += ' (arma de fogo)';
+          if (temParag4) descricaoEnriquecida += ' §4º (privilegiado)';
           if (isHediondoPelaFracao) descricaoEnriquecida += ' [Hediondo]';
+          if (isFracaoComum) descricaoEnriquecida += ' [Comum]';
 
           let penaAssociada = { anos: 0, meses: 0, dias: 0 };
           for (const pena of penasTemp) {
@@ -743,7 +827,20 @@
       renderizarProcessos();
       recalcularPenaTotalSEEU();
     }
-    function removerProcesso(i) { processos.splice(i,1); renderizarProcessos(); recalcularPenaTotalSEEU(); }
+    function removerProcesso(i) {
+      // Ao remover processo pela lixeira, ajustar o penaTotalSEEUOriginal
+      // subtraindo a pena do processo removido (mesmo comportamento de "Extinto")
+      if (penaTotalSEEUOriginal !== null) {
+        const pRemovido = processos[i].penaTotalProcesso || {anos:0,meses:0,dias:0};
+        const origDias = converterParaDias(penaTotalSEEUOriginal.anos, penaTotalSEEUOriginal.meses, penaTotalSEEUOriginal.dias);
+        const removDias = converterParaDias(pRemovido.anos||0, pRemovido.meses||0, pRemovido.dias||0);
+        const novoDias = Math.max(0, origDias - removDias);
+        penaTotalSEEUOriginal = converterParaTempo(novoDias);
+      }
+      processos.splice(i,1);
+      renderizarProcessos();
+      recalcularPenaTotalSEEU();
+    }
     function atualizarProcesso(i,c,v) { processos[i][c]=v; renderizarProcessos(); if(c==='isExtinto') recalcularPenaTotalSEEU(); }
     function atualizarPenaTotalProcesso(i,c,v) {
       if (!processos[i].penaTotalProcesso) processos[i].penaTotalProcesso={anos:0,meses:0,dias:0};
