@@ -945,7 +945,7 @@
       recalcularPenaTotalSEEU();
     }
     function removerProcesso(i) {
-      // Ao remover processo pela lixeira, ajustar o penaTotalSEEUOriginal
+      // Ao remover processo pela lixeira, ajustar o penaTotalSEEUOriginal e somaProcessosOriginalDias
       // subtraindo a pena do processo removido (mesmo comportamento de "Extinto")
       if (penaTotalSEEUOriginal !== null) {
         const pRemovido = processos[i].penaTotalProcesso || {anos:0,meses:0,dias:0};
@@ -953,6 +953,10 @@
         const removDias = converterParaDias(pRemovido.anos||0, pRemovido.meses||0, pRemovido.dias||0);
         const novoDias = Math.max(0, origDias - removDias);
         penaTotalSEEUOriginal = converterParaTempo(novoDias);
+        // Ajustar também a soma original dos processos
+        if (somaProcessosOriginalDias !== null) {
+          somaProcessosOriginalDias = Math.max(0, somaProcessosOriginalDias - removDias);
+        }
       }
       processos.splice(i,1);
       renderizarProcessos();
@@ -983,6 +987,10 @@
         }
       }
       renderizarProcessos();
+      // Quando a pena de um delito muda, recalcular a pena total SEEU
+      if (['anos','meses','dias'].includes(campo)) {
+        recalcularPenaTotalSEEU();
+      }
     }
 
     function atualizarInfoPenas() {
@@ -1006,6 +1014,9 @@
     // ==========================================
     // Guarda o valor original do SEEU para referência
     let penaTotalSEEUOriginal = null;
+    // Guarda a soma original das penas dos processos no momento do carregamento do PDF.
+    // Usado para detectar se o usuário editou penas manualmente.
+    let somaProcessosOriginalDias = null;
 
     function recalcularPenaTotalSEEU() {
       // Se nunca salvamos o original, salvar agora (antes de qualquer modificação)
@@ -1017,7 +1028,7 @@
         };
       }
 
-      // Somar penas dos processos ATIVOS (não extintos)
+      // Calcular soma atual das penas dos processos ATIVOS (não extintos)
       let somaAtivosDias = 0;
       processos.forEach(p => {
         if (!p.isExtinto) {
@@ -1025,28 +1036,56 @@
         }
       });
 
-      // Se todos os processos estão ativos, usar o original do SEEU (pode ter ajustes de comutações anteriores)
+      // Se nunca registramos a soma original dos processos, registrar agora
+      if (somaProcessosOriginalDias === null) {
+        somaProcessosOriginalDias = somaAtivosDias;
+      }
+
       const todosAtivos = processos.every(p => !p.isExtinto);
       const originalDias = converterParaDias(penaTotalSEEUOriginal.anos, penaTotalSEEUOriginal.meses, penaTotalSEEUOriginal.dias);
       
-      // Usar o menor entre: original SEEU e a soma dos ativos
-      // (pois SEEU pode ter ajustes de comutações, a soma ativa deve refletir remoções de extintos)
       let novaPenaTotal;
       if (todosAtivos) {
-        // Manter o valor original do SEEU quando todos estão ativos
-        novaPenaTotal = penaTotalSEEUOriginal;
+        // Verificar se o usuário editou penas manualmente
+        // (soma atual difere da soma original dos processos)
+        const usuarioEditouPenas = (somaAtivosDias !== somaProcessosOriginalDias);
+        if (usuarioEditouPenas) {
+          // Usuário editou penas → usar a soma ativa como novo total
+          // Manter proporção do ajuste SEEU se houver comutações anteriores
+          const ajusteAnterior = originalDias - somaProcessosOriginalDias; // negativo se SEEU < soma (comutações)
+          if (ajusteAnterior < 0) {
+            // SEEU tinha comutações anteriores: aplicar mesmo ajuste à nova soma
+            const novoDias = Math.max(0, somaAtivosDias + ajusteAnterior);
+            novaPenaTotal = converterParaTempo(novoDias);
+          } else {
+            // Sem comutações anteriores: usar soma ativa diretamente
+            novaPenaTotal = converterParaTempo(somaAtivosDias);
+          }
+        } else {
+          // Nenhuma edição manual → manter o valor original do SEEU
+          novaPenaTotal = penaTotalSEEUOriginal;
+        }
       } else {
-        // Quando há processos extintos, calcular proporcionalmente:
-        // Se SEEU original < soma originais, há ajuste (comutações anteriores).
-        // Calcular pena dos extintos e subtrair do SEEU original.
+        // Quando há processos extintos, subtrair pena dos extintos do SEEU original
         let somaExtintosDias = 0;
         processos.forEach(p => {
           if (p.isExtinto) {
             somaExtintosDias += converterParaDias(p.penaTotalProcesso?.anos||0, p.penaTotalProcesso?.meses||0, p.penaTotalProcesso?.dias||0);
           }
         });
-        const novoPenaDias = Math.max(0, originalDias - somaExtintosDias);
-        novaPenaTotal = converterParaTempo(novoPenaDias);
+        // Se o usuário também editou penas, considerar a soma ativa menos extintos
+        const usuarioEditouPenas = (somaAtivosDias + somaExtintosDias) !== somaProcessosOriginalDias;
+        if (usuarioEditouPenas) {
+          const ajusteAnterior = originalDias - somaProcessosOriginalDias;
+          if (ajusteAnterior < 0) {
+            novaPenaTotal = converterParaTempo(Math.max(0, somaAtivosDias + ajusteAnterior));
+          } else {
+            novaPenaTotal = converterParaTempo(somaAtivosDias);
+          }
+        } else {
+          const novoPenaDias = Math.max(0, originalDias - somaExtintosDias);
+          novaPenaTotal = converterParaTempo(novoPenaDias);
+        }
       }
 
       document.getElementById('pena-total-anos').value = novaPenaTotal.anos;
@@ -1195,9 +1234,13 @@
       const penaComunBaseSEEUDias = Math.max(0, penaTotalDias - diasImpeditivos);
       const pcb = converterParaTempo(penaComunBaseSEEUDias);
       
-      // Comutações anteriores: comparar soma de TODOS os processos originais vs pena SEEU original
+      // Comutações anteriores: comparar soma de TODOS os processos vs pena SEEU
+      // Se o usuário editou penas, comparar soma atual vs campo SEEU atual (ambos editados)
       const penaSEEUOrigDias = penaTotalSEEUOriginal ? converterParaDias(penaTotalSEEUOriginal.anos, penaTotalSEEUOriginal.meses, penaTotalSEEUOriginal.dias) : penaTotalDias;
-      const comutacoesAnterioresDias = somaPenasOriginaisDias - penaSEEUOrigDias;
+      const usuarioEditouPenasCalc = somaProcessosOriginalDias !== null && somaPenasOriginaisDias !== somaProcessosOriginalDias;
+      const comutacoesAnterioresDias = usuarioEditouPenasCalc 
+        ? somaPenasOriginaisDias - penaTotalDias  // Quando editou: comparar soma atual vs SEEU atual
+        : somaPenasOriginaisDias - penaSEEUOrigDias; // Sem edição: comparar soma vs SEEU original
       const temComutacoesAnteriores = comutacoesAnterioresDias > 0;
       const processosComutados = processos.filter(p => !p.isExtinto && p.isComutada);
       const processosExtintos = processos.filter(p => p.isExtinto);
@@ -1464,6 +1507,7 @@
       document.getElementById('data-geracao').value = '';
 
       penaTotalSEEUOriginal = null;
+      somaProcessosOriginalDias = null;
       processos = [{ numero:'', isExtinto:false, isComutada:false, penaTotalProcesso:{anos:0,meses:0,dias:0}, delitos:[{artigo:'',descricao:'',lei:'',anos:0,meses:0,dias:0,isImpeditivo:false,dataFato:''}] }];
       renderizarProcessos();
       atualizarInfoPenas();
@@ -1529,6 +1573,11 @@
         }
 
         processos = dados.processos.length > 0 ? dados.processos : [{ numero:'', isExtinto:false, isComutada:false, penaTotalProcesso:{anos:0,meses:0,dias:0}, delitos:[{artigo:'',descricao:'',lei:'',anos:0,meses:0,dias:0,isImpeditivo:false,dataFato:''}] }];
+
+        // Registrar soma original dos processos para detectar edições manuais
+        somaProcessosOriginalDias = processos.reduce((acc, p) => {
+          return acc + converterParaDias(p.penaTotalProcesso?.anos||0, p.penaTotalProcesso?.meses||0, p.penaTotalProcesso?.dias||0);
+        }, 0);
 
         renderizarProcessos();
         atualizarInfoPenas();
